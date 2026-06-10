@@ -11,7 +11,7 @@ import (
 func AuthorisedCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		cookie, err := c.Cookie("tokenn")
+		cookie, err := c.Cookie("token")
 		if err != nil {
 			c.Redirect(http.StatusSeeOther, "/login")
 			return

@@ -8,8 +8,14 @@ import (
 
 func Routes() *gin.Engine {
 	r := gin.Default()
-	r.POST("/login", handler.LoginHandler)
+	//Авторизация
+	r.POST("/api/login", handler.LoginHandler)
+	r.GET("/login", handler.LoginHandlerShow)
 	auth := r.Group("/")
 	auth.Use(middleware.AuthorisedCheck())
+	//Добавление пользователя
+	auth.POST("/api/adduser", handler.AddUserHandler)
+	auth.GET("/adduser", handler.AddUserHandlerShow)
+
 	return r
 }
