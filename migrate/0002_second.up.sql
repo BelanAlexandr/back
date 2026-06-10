@@ -6,7 +6,7 @@ CREATE TABLE electronic_journal(
     №stati VARCHAR(255) NOT NULL,
     vid_exp INTEGER NOT NULL,
     stat BOOLEAN NOT NULL,
-    iz_nix INTEGER NOT NULL
+    iz_nix INTEGER NOT NULL,
     category INTEGER NOT NULL,
     organ VARCHAR(255) NOT NULL,
     region INTEGER NOT NULL,
@@ -38,6 +38,6 @@ CREATE TABLE electronic_journal(
     exploitation_cost FLOAT,
     full_cost FLOAT,
     descrip TEXT,
-    closed BOOLEAN DEFAULT FALSE,
+    closed BOOLEAN DEFAULT FALSE
 );
 CREATE INDEX idx_electronic_journal_closed ON electronic_journal(closed);
