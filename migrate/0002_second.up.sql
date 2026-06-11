@@ -1,11 +1,12 @@
 CREATE TABLE electronic_journal(
     id SERIAL PRIMARY KEY,
+    file_id INTEGER NOT NULL,
     data_post DATE NOT NULL,
     Fab TEXT NOT NULL,
     №adm_material INTEGER NOT NULL,
     №stati VARCHAR(255) NOT NULL,
     vid_exp INTEGER NOT NULL,
-    stat BOOLEAN NOT NULL,
+    stat INTEGER NOT NULL,
     iz_nix INTEGER NOT NULL,
     category INTEGER NOT NULL,
     organ VARCHAR(255) NOT NULL,
@@ -37,11 +38,13 @@ CREATE TABLE electronic_journal(
     material_cost FLOAT,
     exploitation_cost FLOAT,
     full_cost FLOAT,
-    full_cost_NDS FLOAT,
     descrip TEXT,
-    closed BOOLEAN DEFAULT FALSE
 );
 CREATE TABLE filenames(id SERIAL PRIMARY KEY,
 file_name VARCHAR(255) NOT NULL UNIQUE ,
-user_id INTEGER NOT NULL);
+user_id INTEGER NOT NULL,
+is_closed BOOLEAN NOT NULL DEFAULT FALSE
+total FLOAT,
+total_NDS FLOAT
+);
 CREATE INDEX idx_electronic_journal_closed ON electronic_journal(closed);

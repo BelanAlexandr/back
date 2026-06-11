@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мониторинг файлов (Boolean)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border-top: 2px solid #eee;
+        }
+        .file-status {
+            padding: 8px 0;
+            font-size: 18px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .open { color: #28a745; font-weight: bold; }
+        .closed { color: #dc3545; font-weight: bold; }
+        .error { color: #dc3545; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Входные данные (JSON c Boolean)</h2>
+    <textarea id="jsonInput">[
+  {"name": "файл1", "isOpen": true},
+  {"name": "файл2", "isOpen": false},
+  {"name": "файл3", "isOpen": true}
+]</textarea>
+    <button onclick="processJSON()">Показать статус</button>
+
+    <div id="output"></div>
+</div>
+
+<script>
+    function processJSON() {
+        const inputArea = document.getElementById('jsonInput');
+        const outputDiv = document.getElementById('output');
+        
+        outputDiv.innerHTML = '';
+
+        try {
+            const data = JSON.parse(inputArea.value);
+
+            if (!Array.isArray(data)) {
+                throw new Error("JSON должен быть массивом объектов.");
+            }
+
+            data.forEach(item => {
+                // Проверяем boolean значение: true -> открыт, false -> закрыт
+                const isOpen = item.isOpen; 
+                const statusText = isOpen ? 'открыт' : 'закрыт';
+                const statusClass = isOpen ? 'open' : 'closed';
+                
+                const row = document.createElement('div');
+                row.className = 'file-status';
+                row.innerHTML = `${item.name} <span class="${statusClass}">${statusText}</span>`;
+                
+                outputDiv.appendChild(row);
+            });
+
+        } catch (e) {
+            outputDiv.innerHTML = `<p class="error">Ошибка обработки JSON: ${e.message}</p>`;
+        }
+    }
+
+    window.onload = processJSON;
+</script>
+
+</body>
+</html>
