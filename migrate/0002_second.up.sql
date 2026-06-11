@@ -1,5 +1,6 @@
 CREATE TABLE electronic_journal (
     id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL,
     data_post DATE NOT NULL,
     Fab TEXT NOT NULL,
     №adm_material INTEGER NOT NULL, 

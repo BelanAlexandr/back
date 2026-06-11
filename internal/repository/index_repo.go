@@ -1,31 +1,53 @@
 package repository
 
 import (
-	"fmt"
-
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-func IndexGetRepo() ([]models.FilesNames, error) {
+func IndexGetRepo() ([]models.Exp, error) {
 	query := `
-    SELECT file_name, is_closed 
-    FROM filenames;
+    SELECT id, is_closed 
+    FROM electronic_journal;
 `
 	res, err := db.Query(query)
 	if err != nil {
-		return []models.FilesNames{}, err
+		return []models.Exp{}, err
 	}
 
-	var files []models.FilesNames
+	var files []models.Exp
 	for res.Next() {
-		var file models.FilesNames
-		err := res.Scan(&file.File_Name, &file.Is_closed)
+		var file models.Exp
+		err := res.Scan(&file.Id, &file.Is_Closed)
 		if err != nil {
-			return []models.FilesNames{}, err
+			return []models.Exp{}, err
 		}
 
 		files = append(files, file)
 	}
-	fmt.Println(files)
+
+	return files, nil
+}
+func IndexGetEmployeeRepo(id int) ([]models.Exp, error) {
+	query := `
+    SELECT id, is_closed 
+    FROM electronic_journal
+	WHERE creator_id=$1;
+`
+	res, err := db.Query(query, id)
+	if err != nil {
+		return []models.Exp{}, err
+	}
+
+	var files []models.Exp
+	for res.Next() {
+		var file models.Exp
+		err := res.Scan(&file.Id, &file.Is_Closed)
+		if err != nil {
+			return []models.Exp{}, err
+		}
+
+		files = append(files, file)
+	}
+
 	return files, nil
 }

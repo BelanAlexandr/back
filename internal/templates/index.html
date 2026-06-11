@@ -122,7 +122,7 @@
                 const statusClass = isClosed ? 'closed' : 'open';
                 
                 row.innerHTML = `
-                    <span class="file-name">${item.file_name || 'Без названия'}</span>
+                    <span class="file-name">${item.id || 'Без названия'}</span>
                     <span class="${statusClass}">${statusText}</span>
                 `;
                 outputDiv.appendChild(row);
