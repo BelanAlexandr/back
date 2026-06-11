@@ -9,6 +9,22 @@ import (
 )
 
 func IndexHandlerShow(c *gin.Context) {
+	_, existsRole := c.Get("userRole")
+	_, existsID := c.Get("userID")
+	if !existsRole || !existsID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+		return
+	}
+
+	tmpl, err := template.ParseFiles("internal/templates/index.html")
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	tmpl.Execute(c.Writer, nil)
+}
+func IndexHandler(c *gin.Context) {
 	userRoleValue, existsRole := c.Get("userRole")
 	userIdValue, existsID := c.Get("userID")
 	if !existsRole || !existsID {
@@ -21,12 +37,6 @@ func IndexHandlerShow(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный формат ID или роли пользователя"})
 		return
 	}
-	tmpl, err := template.ParseFiles("internal/templates/add_user.html")
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
 	tables := service.IndexGetService(userId, userRole)
 	c.JSON(http.StatusOK, tables)
-	tmpl.Execute(c.Writer, nil)
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мониторинг файлов (Boolean)</title>
+    <title>Мониторинг файлов</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,88 +18,121 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        textarea {
-            width: 100%;
-            height: 120px;
-            margin-bottom: 10px;
-            font-family: monospace;
-            box-sizing: border-box;
-            padding: 10px;
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        button {
-            padding: 10px 20px;
-            background-color: #28a745;
+        .btn-refresh {
+            font-size: 14px;
+            padding: 5px 10px;
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
         }
-        button:hover {
-            background-color: #218838;
-        }
-        #output {
-            margin-top: 20px;
-            padding: 10px;
-            border-top: 2px solid #eee;
+        .btn-refresh:hover { background-color: #0056b3; }
+        .file-list {
+            margin-top: 15px;
         }
         .file-status {
-            padding: 8px 0;
+            padding: 12px 0;
             font-size: 18px;
             border-bottom: 1px solid #f1f1f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .open { color: #28a745; font-weight: bold; }
-        .closed { color: #dc3545; font-weight: bold; }
+        .file-status:last-child {
+            border-bottom: none;
+        }
+        .open { 
+            color: #28a745; 
+            font-weight: bold; 
+            background-color: #e8f5e9;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .closed { 
+            color: #dc3545; 
+            font-weight: bold; 
+            background-color: #fdecfa;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
         .error { color: #dc3545; font-style: italic; }
+        .loading { color: #6c757d; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Входные данные (JSON c Boolean)</h2>
-    <textarea id="jsonInput">[
-  {"name": "файл1", "isOpen": true},
-  {"name": "файл2", "isOpen": false},
-  {"name": "файл3", "isOpen": true}
-]</textarea>
-    <button onclick="processJSON()">Показать статус</button>
-
-    <div id="output"></div>
+    <h2>
+        Статус файлов системы
+        <button class="btn-refresh" onclick="loadFileStatuses()">Обновить</button>
+    </h2>
+    <div id="output" class="file-list">
+        <p class="loading">Загрузка данных...</p>
+    </div>
 </div>
 
 <script>
-    function processJSON() {
-        const inputArea = document.getElementById('jsonInput');
+    async function loadFileStatuses() {
         const outputDiv = document.getElementById('output');
         
-        outputDiv.innerHTML = '';
+        // Показываем статус загрузки при обновлении
+        outputDiv.innerHTML = '<p class="loading">Обновление данных...</p>';
 
         try {
-            const data = JSON.parse(inputArea.value);
+            // Запрос идет строго на твой роут auth.GET("/api/", ...)
+            const response = await fetch('/api/');
 
-            if (!Array.isArray(data)) {
-                throw new Error("JSON должен быть массивом объектов.");
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error("Доступ запрещен (403). Проверьте авторизацию.");
+                }
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Ошибка сервера (${response.status})`);
             }
 
+            const data = await response.json();
+            outputDiv.innerHTML = '';
+
+            // Если бэкенд вернул пустой массив или null
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                outputDiv.innerHTML = '<p class="loading">Нет доступных файлов для отображения.</p>';
+                return;
+            }
+
+            // Рендерим каждую строку
             data.forEach(item => {
-                // Проверяем boolean значение: true -> открыт, false -> закрыт
-                const isOpen = item.isOpen; 
+                const row = document.createElement('div');
+                row.className = 'file-status';
+                
+                // Проверяем булево поле IsOpen (поддерживает camelCase и snake_case из Go структуры)
+                const isOpen = item.isOpen !== undefined ? item.isOpen : item.is_open;
                 const statusText = isOpen ? 'открыт' : 'закрыт';
                 const statusClass = isOpen ? 'open' : 'closed';
                 
-                const row = document.createElement('div');
-                row.className = 'file-status';
-                row.innerHTML = `${item.name} <span class="${statusClass}">${statusText}</span>`;
-                
+                row.innerHTML = `
+                    <span class="file-name">${item.name || 'Без названия'}</span>
+                    <span class="${statusClass}">${statusText}</span>
+                `;
                 outputDiv.appendChild(row);
             });
 
         } catch (e) {
-            outputDiv.innerHTML = `<p class="error">Ошибка обработки JSON: ${e.message}</p>`;
+            outputDiv.innerHTML = `<p class="error">Не удалось получить данные: ${e.message}</p>`;
         }
     }
 
-    window.onload = processJSON;
+    // Автоматический вызов функции при загрузке страницы в браузере
+    window.onload = loadFileStatuses;
 </script>
 
 </body>

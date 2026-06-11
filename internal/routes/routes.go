@@ -18,5 +18,6 @@ func Routes() *gin.Engine {
 	auth.GET("/adduser", handler.AddUserHandlerShow)
 	//Главная
 	auth.GET("/", handler.IndexHandlerShow)
+	auth.GET("/api/", handler.IndexHandler)
 	return r
 }
