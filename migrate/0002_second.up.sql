@@ -37,7 +37,11 @@ CREATE TABLE electronic_journal(
     material_cost FLOAT,
     exploitation_cost FLOAT,
     full_cost FLOAT,
+    full_cost_NDS FLOAT,
     descrip TEXT,
     closed BOOLEAN DEFAULT FALSE
 );
+CREATE TABLE filenames(id SERIAL PRIMARY KEY,
+file_name VARCHAR(255) NOT NULL UNIQUE ,
+user_id INTEGER NOT NULL);
 CREATE INDEX idx_electronic_journal_closed ON electronic_journal(closed);
