@@ -37,6 +37,9 @@ func IndexHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный формат ID или роли пользователя"})
 		return
 	}
-	tables := service.IndexGetService(userId, userRole)
+	tables, err := service.IndexGetService(userId, userRole)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+	}
 	c.JSON(http.StatusOK, tables)
 }

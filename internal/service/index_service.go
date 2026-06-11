@@ -5,14 +5,15 @@ import (
 	"github.com/BelanAlexandr/back/internal/repository"
 )
 
-func IndexGetService(id, role int) []models.FilesNames {
+func IndexGetService(id, role int) ([]models.FilesNames, error) {
 	switch role {
 	case models.RoleAdmin:
-		repository.IndexGetRepo()
+		return repository.IndexGetRepo()
+
 	case models.RoleDirector:
 	case models.RoleEmployee:
 	default:
 	}
 
-	return []models.FilesNames{}
+	return []models.FilesNames{}, nil
 }

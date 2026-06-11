@@ -82,6 +82,7 @@
 </div>
 
 <script>
+  
     async function loadFileStatuses() {
         const outputDiv = document.getElementById('output');
         
@@ -89,7 +90,6 @@
         outputDiv.innerHTML = '<p class="loading">Обновление данных...</p>';
 
         try {
-            // Запрос идет строго на твой роут auth.GET("/api/", ...)
             const response = await fetch('/api/');
 
             if (!response.ok) {
@@ -103,7 +103,6 @@
             const data = await response.json();
             outputDiv.innerHTML = '';
 
-            // Если бэкенд вернул пустой массив или null
             if (!data || !Array.isArray(data) || data.length === 0) {
                 outputDiv.innerHTML = '<p class="loading">Нет доступных файлов для отображения.</p>';
                 return;
@@ -114,13 +113,16 @@
                 const row = document.createElement('div');
                 row.className = 'file-status';
                 
-                // Проверяем булево поле IsOpen (поддерживает camelCase и snake_case из Go структуры)
-                const isOpen = item.isOpen !== undefined ? item.isOpen : item.is_open;
-                const statusText = isOpen ? 'открыт' : 'закрыт';
-                const statusClass = isOpen ? 'open' : 'closed';
+                // 1. Безопасно достаем флаг закрытия из JSON бэкенда
+                const isClosed = item.is_closed; 
+                
+                // 2. Правильно сопоставляем: если isClosed TRUE -> статус "закрыт" (красный)
+                //                            если isClosed FALSE -> статус "открыт" (зеленый)
+                const statusText = isClosed ? 'закрыт' : 'открыт';
+                const statusClass = isClosed ? 'closed' : 'open';
                 
                 row.innerHTML = `
-                    <span class="file-name">${item.name || 'Без названия'}</span>
+                    <span class="file-name">${item.file_name || 'Без названия'}</span>
                     <span class="${statusClass}">${statusText}</span>
                 `;
                 outputDiv.appendChild(row);
@@ -133,6 +135,7 @@
 
     // Автоматический вызов функции при загрузке страницы в браузере
     window.onload = loadFileStatuses;
+
 </script>
 
 </body>
