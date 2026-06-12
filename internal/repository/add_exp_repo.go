@@ -6,7 +6,7 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-func AddExpRepo(exp models.AddExp) error {
+func AddExpRepo(exp models.Exp) error {
 	query := `
 		INSERT INTO electronic_journal (
 			creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,

@@ -7,7 +7,7 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-func CloseExpRepo(exp models.CloseExp) error {
+func CloseExpRepo(exp models.Exp) error {
 	query := `
 		UPDATE electronic_journal 
 		SET 

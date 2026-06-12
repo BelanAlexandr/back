@@ -37,7 +37,7 @@ func AddExpHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
-	var req models.AddExp
+	var req models.Exp
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

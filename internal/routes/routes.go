@@ -24,8 +24,10 @@ func Routes() *gin.Engine {
 	auth.GET("/api/addexp/regions", handler.GetRegionsHandler)
 	auth.POST("/api/addexp", handler.AddExpHandler)
 	//Закрытие экспертизы
-	auth.GET("/closeexp", handler.CloseExpHandler)
+	auth.GET("/closeexp", handler.CloseExpHandlerShow)
 	auth.PATCH("/api/closeexp", handler.CloseExpHandler)
-
+	//Редактирование
+	auth.GET("/edit", handler.EditExpHandlerShow)
+	auth.PATCH("/api/edit", handler.EditExpHandler)
 	return r
 }
