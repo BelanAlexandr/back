@@ -5,8 +5,9 @@ import (
 	"text/template"
 
 	"github.com/BelanAlexandr/back/internal/models"
-	"github.com/BelanAlexandr/back/internal/service"
+	"github.com/BelanAlexandr/back/internal/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 func AddExpHandlerShow(c *gin.Context) {
@@ -42,6 +43,15 @@ func AddExpHandler(c *gin.Context) {
 		return
 	}
 	req.Creator_id = userId
-	err := service.AddExpService(req)
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
+		return
+	}
+	err := repository.AddExpRepo(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить данные: " + err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, err)
 }
