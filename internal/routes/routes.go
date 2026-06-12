@@ -19,5 +19,7 @@ func Routes() *gin.Engine {
 	//Главная
 	auth.GET("/", handler.IndexHandlerShow)
 	auth.GET("/api/", handler.IndexHandler)
+	//Добавление экспертизы
+	auth.GET("/api/addexp/regions", handler.GetRegionsHandler)
 	return r
 }
