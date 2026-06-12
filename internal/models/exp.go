@@ -77,6 +77,8 @@ type AddExp struct {
 	Diff_Cat_Id        *int    `json:"diff_cat_id" validate:"required"`
 }
 type CloseExp struct {
+	Id                int      `json:"id"`
+	Creator_id        int      `json:"creator_id" validate:"required"`
 	End_Date          *string  `json:"end_date" validate:"required"`
 	Day_Count         *int     `json:"day_count" validate:"required"`
 	Exp_Day_Count     *int     `json:"exp_day_count" validate:"required"`

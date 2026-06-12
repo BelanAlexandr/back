@@ -30,19 +30,19 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		&exp.Name_Organ,
 		&exp.Name_Naznch,
 		&exp.Second_Name_Naznch,
-		&exp.Patronymic_Naznch, // Добавили & (теперь это адрес указателя **string)
+		&exp.Patronymic_Naznch,
 		&exp.Name_Exp,
 		&exp.Second_Name_Exp,
-		&exp.Patronymic_Exp, // Добавили &
+		&exp.Patronymic_Exp,
 		&exp.Question_Count,
 		&exp.Object_Count,
-		&exp.Srok_Exp,      // Добавили &
-		&exp.Stop_Date,     // Добавили &
-		&exp.Stop_Reason,   // Добавили &
-		&exp.Resuming_Date, // Добавили &
-		&exp.Srok_Resuming, // Добавили &
-		&exp.End_Date,      // Добавили &
-		&exp.Day_Count,     // и так далее...
+		&exp.Srok_Exp,
+		&exp.Stop_Date,
+		&exp.Stop_Reason,
+		&exp.Resuming_Date,
+		&exp.Srok_Resuming,
+		&exp.End_Date,
+		&exp.Day_Count,
 		&exp.Exp_Day_Count,
 		&exp.Cat_Vivod,
 		&exp.Possible_Vivod,

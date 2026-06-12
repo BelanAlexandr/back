@@ -7,6 +7,7 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 func CloseExpHandlerShow(c *gin.Context) {
@@ -30,11 +31,21 @@ func CloseExpHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-
-	table, err := repository.GetJournalRow(id)
-	if err != nil {
+	var req models.CloseExp
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, table)
+	req.Id = id
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
+		return
+	}
+	err = repository.CloseExpRepo(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить данные: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, err)
 }
