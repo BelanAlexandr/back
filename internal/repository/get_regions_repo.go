@@ -3,7 +3,7 @@ package repository
 import "github.com/BelanAlexandr/back/internal/models"
 
 func GetRegionsRepo() (regions []models.Regions, err error) {
-	rows, err := db.Query("SELECT id, name FROM dict_region WHERE cd=0 AND ef=0")
+	rows, err := db.Query("SELECT te, rus_name FROM dict_region WHERE cd=0 AND ef=0")
 	if err != nil {
 		return nil, err
 	}
