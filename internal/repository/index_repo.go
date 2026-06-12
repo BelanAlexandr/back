@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-func IndexGetRepo(lastID int, limit int) ([]models.Exp, error) {
+func IndexGetRepo(lastID int, limit int, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, error) {
+
 	query := `
 		SELECT 
 			id, creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
@@ -17,18 +19,45 @@ func IndexGetRepo(lastID int, limit int) ([]models.Exp, error) {
 			full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
 			diff_cat_id, exp_res_id
 		FROM electronic_journal
-		WHERE id > $1
-		ORDER BY id ASC
-		LIMIT $2;`
+		WHERE id < $1`
 
-	rows, err := db.QueryContext(context.Background(), query, lastID, limit)
+	args := []interface{}{lastID}
+	placeholderIdx := 2
+
+	if statusFilter == "open" {
+		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
+		args = append(args, false)
+		placeholderIdx++
+	} else if statusFilter == "closed" {
+		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
+		args = append(args, true)
+		placeholderIdx++
+	}
+
+	if dateFrom != "" && dateTo != "" {
+		query += fmt.Sprintf(" AND data_post BETWEEN $%d AND $%d", placeholderIdx, placeholderIdx+1)
+		args = append(args, dateFrom, dateTo)
+		placeholderIdx += 2
+	} else if dateFrom != "" {
+		query += fmt.Sprintf(" AND data_post >= $%d", placeholderIdx)
+		args = append(args, dateFrom)
+		placeholderIdx++
+	} else if dateTo != "" {
+		query += fmt.Sprintf(" AND data_post <= $%d", placeholderIdx)
+		args = append(args, dateTo)
+		placeholderIdx++
+	}
+
+	query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d;", placeholderIdx)
+	args = append(args, limit)
+
+	rows, err := db.QueryContext(context.Background(), query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	var exps []models.Exp
-
 	for rows.Next() {
 		var exp models.Exp
 		err := rows.Scan(
@@ -54,7 +83,9 @@ func IndexGetRepo(lastID int, limit int) ([]models.Exp, error) {
 
 	return exps, nil
 }
-func IndexGetEmployeeRepo(creator_id, lastID int, limit int) ([]models.Exp, error) {
+
+func IndexGetEmployeeRepo(creator_id int, lastID int, limit int, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, error) {
+
 	query := `
 		SELECT 
 			id, creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
@@ -65,18 +96,40 @@ func IndexGetEmployeeRepo(creator_id, lastID int, limit int) ([]models.Exp, erro
 			full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
 			diff_cat_id, exp_res_id
 		FROM electronic_journal
-		WHERE id > $1 AND creator_id=$2
-		ORDER BY id ASC
-		LIMIT $3;`
+		WHERE id < $1 AND creator_id = $2`
 
-	rows, err := db.QueryContext(context.Background(), query, lastID, creator_id, limit)
+	args := []interface{}{lastID, creator_id}
+	placeholderIdx := 3
+	if statusFilter == "open" {
+		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
+		args = append(args, false)
+		placeholderIdx++
+	} else if statusFilter == "closed" {
+		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
+		args = append(args, true)
+		placeholderIdx++
+	}
+	if dateFrom != "" && dateTo != "" {
+		query += fmt.Sprintf(" AND data_post BETWEEN $%d AND $%d", placeholderIdx, placeholderIdx+1)
+		args = append(args, dateFrom, dateTo)
+		placeholderIdx += 2
+	} else if dateFrom != "" {
+		query += fmt.Sprintf(" AND data_post >= $%d", placeholderIdx)
+		args = append(args, dateFrom)
+		placeholderIdx++
+	} else if dateTo != "" {
+		query += fmt.Sprintf(" AND data_post <= $%d", placeholderIdx)
+		args = append(args, dateTo)
+		placeholderIdx++
+	}
+	query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d;", placeholderIdx)
+	args = append(args, limit)
+	rows, err := db.QueryContext(context.Background(), query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	var exps []models.Exp
-
 	for rows.Next() {
 		var exp models.Exp
 		err := rows.Scan(

@@ -19,13 +19,15 @@ func IndexHandlerShow(c *gin.Context) {
 
 	tmpl, err := template.ParseFiles("internal/templates/index.html")
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	tmpl.Execute(c.Writer, nil)
 }
+
 func IndexHandler(c *gin.Context) {
+
 	userRoleValue, existsRole := c.Get("userRole")
 	userIdValue, existsID := c.Get("userID")
 	if !existsRole || !existsID {
@@ -39,10 +41,10 @@ func IndexHandler(c *gin.Context) {
 		return
 	}
 
-	lastIDStr := c.DefaultQuery("last_id", "0")
+	lastIDStr := c.DefaultQuery("last_id", "2147483647")
 	lastID, err := strconv.Atoi(lastIDStr)
-	if err != nil || lastID < 0 {
-		lastID = 0
+	if err != nil || lastID <= 0 {
+		lastID = 2147483647
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
@@ -56,7 +58,11 @@ func IndexHandler(c *gin.Context) {
 		limit = maxLimit
 	}
 
-	tables, err := service.IndexGetService(userId, userRole, lastID, limit)
+	statusFilter := c.Query("status")
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
+
+	tables, err := service.IndexGetService(userId, userRole, lastID, limit, statusFilter, dateFrom, dateTo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить данные: " + err.Error()})
 		return
