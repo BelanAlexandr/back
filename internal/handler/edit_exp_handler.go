@@ -44,5 +44,5 @@ func EditExpHandler(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 	}
-
+	c.JSON(http.StatusOK, err)
 }

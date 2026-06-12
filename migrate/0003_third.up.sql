@@ -58,3 +58,5 @@ ALTER TABLE electronic_journal
     ADD COLUMN iz_nix_id INTEGER REFERENCES dict_iz_nix(id),
     ADD COLUMN diff_cat_id INTEGER REFERENCES dict_diff_cat(id),
     ADD COLUMN exp_res_id INTEGER REFERENCES dict_exp_res(id);
+    
+CREATE INDEX idx_id_electronic_journal ON electronic_journal(id);

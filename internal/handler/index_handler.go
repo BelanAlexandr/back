@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"text/template"
 
 	"github.com/BelanAlexandr/back/internal/service"
@@ -37,9 +38,29 @@ func IndexHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Неверный формат ID или роли пользователя"})
 		return
 	}
-	tables, err := service.IndexGetService(userId, userRole)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+
+	lastIDStr := c.DefaultQuery("last_id", "0")
+	lastID, err := strconv.Atoi(lastIDStr)
+	if err != nil || lastID < 0 {
+		lastID = 0
 	}
+
+	limitStr := c.DefaultQuery("limit", "10")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	const maxLimit = 100
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	tables, err := service.IndexGetService(userId, userRole, lastID, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить данные: " + err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, tables)
 }
