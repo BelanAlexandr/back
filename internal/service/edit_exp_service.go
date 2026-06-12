@@ -5,6 +5,6 @@ import (
 	"github.com/BelanAlexandr/back/internal/repository"
 )
 
-func CloseExpService(exp models.Exp) error {
-	return repository.CloseExpRepo(exp, true)
+func EditExpService(exp models.Exp) error {
+	return repository.EditExpRepo(exp, false)
 }

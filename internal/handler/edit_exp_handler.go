@@ -6,6 +6,7 @@ import (
 
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/repository"
+	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,6 +34,15 @@ func EditExpHandler(c *gin.Context) {
 	if !existsRole || userRoleValue == models.RoleDirector {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
+	}
+	var req models.Exp
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err := service.EditExpService(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 	}
 
 }

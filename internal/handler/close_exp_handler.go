@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/BelanAlexandr/back/internal/models"
-	"github.com/BelanAlexandr/back/internal/repository"
+	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -42,7 +42,7 @@ func CloseExpHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
 		return
 	}
-	err = repository.CloseExpRepo(req)
+	err = service.CloseExpService(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить данные: " + err.Error()})
 		return
