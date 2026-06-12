@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"text/template"
@@ -29,6 +30,7 @@ func LoginHandler(c *gin.Context) {
 
 	c.SetCookie("token", token, 3600, "/", "", false, true)
 	c.Redirect(http.StatusFound, "/")
+	fmt.Println("a")
 }
 func LoginHandlerShow(c *gin.Context) {
 

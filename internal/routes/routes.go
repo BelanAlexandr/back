@@ -3,11 +3,18 @@ package routes
 import (
 	"github.com/BelanAlexandr/back/internal/handler"
 	"github.com/BelanAlexandr/back/internal/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func Routes() *gin.Engine {
 	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // Адрес вашего фронта
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 	//Авторизация
 	r.POST("/api/login", handler.LoginHandler)
 	r.GET("/login", handler.LoginHandlerShow)

@@ -13,7 +13,8 @@ func AuthorisedCheck() gin.HandlerFunc {
 
 		cookie, err := c.Cookie("token")
 		if err != nil {
-			c.Redirect(http.StatusSeeOther, "/login")
+			c.JSON(http.StatusSeeOther, gin.H{"error": err.Error()})
+			c.Abort()
 			return
 		}
 
