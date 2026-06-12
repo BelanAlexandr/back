@@ -25,7 +25,6 @@ type Exp struct {
 	Resuming_Date *string `json:"resuming_date"`
 	Srok_Resuming *int    `json:"srok_resuming"`
 
-	// 🔥 Поля закрытия: станут required только если Is_Closed == true
 	End_Date         *string `json:"end_date" validate:"required_if=Is_Closed true"`
 	Day_Count        *int    `json:"day_count" validate:"required_if=Is_Closed true"`
 	Exp_Day_Count    *int    `json:"exp_day_count" validate:"required_if=Is_Closed true"`
@@ -35,7 +34,6 @@ type Exp struct {
 	Hour_Count       *int    `json:"hour_count" validate:"required_if=Is_Closed true"`
 	Exp_Res_Id       *int    `json:"exp_res_id" validate:"required_if=Is_Closed true"`
 
-	// Эти поля оставляем необязательными в любом случае
 	Expert_Cost       *float64 `json:"expert_cost"`
 	Material_Cost     *float64 `json:"material_cost"`
 	Exploitation_Cost *float64 `json:"exploitation_cost"`
