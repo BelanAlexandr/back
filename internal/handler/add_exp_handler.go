@@ -11,7 +11,7 @@ import (
 
 func AddExpHandlerShow(c *gin.Context) {
 	userRoleValue, existsRole := c.Get("userRole")
-	if !existsRole || userRoleValue == models.RoleEmployee {
+	if !existsRole || userRoleValue == models.RoleDirector {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
@@ -26,7 +26,7 @@ func AddExpHandlerShow(c *gin.Context) {
 }
 func AddExpHandler(c *gin.Context) {
 	userRoleValue, existsRole := c.Get("userRole")
-	if !existsRole || userRoleValue == models.RoleEmployee {
+	if !existsRole || userRoleValue == models.RoleDirector {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
@@ -36,6 +36,12 @@ func AddExpHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
-	err := service.AddExpService(userId)
+	var req models.AddExp
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	req.Creator_id = userId
+	err := service.AddExpService(req)
 	c.JSON(http.StatusOK, err)
 }

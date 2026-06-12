@@ -1,5 +1,8 @@
 package service
 
-func AddExpService(user_id int) error {
+import "github.com/BelanAlexandr/back/internal/models"
+
+func AddExpService(exp models.AddExp) error {
+
 	return nil
 }

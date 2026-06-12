@@ -19,8 +19,8 @@ CREATE TABLE dict_region (
     ef INTEGER NOT NULL,
     hij INTEGER NOT NULL,
     k INTEGER NOT NULL,
-    kaz_name VARCHAR(255) NOT NULL UNIQUE,
-    rus_name VARCHAR(255) NOT NULL UNIQUE,
+    kaz_name VARCHAR(255) NOT NULL,
+    rus_name VARCHAR(255) NOT NULL,
     nn INTEGER
 );
 CREATE TABLE dict_diff_cat(
@@ -42,11 +42,6 @@ INSERT INTO dict_diff_cat (name) VALUES
 ('Простая'), ('Средней степени Сложности'), ('Сложная'), ('Особо Сложная');
 INSERT INTO dict_exp_res (name) VALUES 
 ('Заключение'), ('СНДЗ'), ('Возврат без исполнения');
-
-
-
-
-
 
 ALTER TABLE electronic_journal 
     DROP COLUMN IF EXISTS stat,
