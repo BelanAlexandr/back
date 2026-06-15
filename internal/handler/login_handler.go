@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"text/template"
@@ -22,15 +21,14 @@ func LoginHandler(c *gin.Context) {
 	}
 	req.Login = strings.TrimSpace(req.Login)
 	req.Password = strings.TrimSpace(req.Password)
-	token, err := service.LoginService(req.Login, req.Password)
+	token, role, err := service.LoginService(req.Login, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.SetCookie("token", token, 3600, "/", "", false, true)
-	c.Redirect(http.StatusFound, "/")
-	fmt.Println("a")
+	c.JSON(http.StatusOK, gin.H{"role": role})
 }
 func LoginHandlerShow(c *gin.Context) {
 

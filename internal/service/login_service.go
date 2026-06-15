@@ -8,20 +8,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func LoginService(login, password string) (string, error) {
+func LoginService(login, password string) (string, int, error) {
 
-	user_id, user_password, err := repository.LoginRepo(login)
+	user_id, user_role, user_password, err := repository.LoginRepo(login)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user_password), []byte(password))
 	if err != nil {
-		return "", fmt.Errorf("invalid password")
+		return "", 0, fmt.Errorf("invalid password")
 	}
 	token, err := utils.GenerateToken(user_id)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
-	return token, nil
+	return token, user_role, nil
 }

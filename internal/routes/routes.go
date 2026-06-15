@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/BelanAlexandr/back/internal/handler"
 	"github.com/BelanAlexandr/back/internal/middleware"
 	"github.com/gin-contrib/cors"
@@ -18,13 +20,23 @@ func Routes() *gin.Engine {
 	//Авторизация
 	r.POST("/api/login", handler.LoginHandler)
 	r.GET("/login", handler.LoginHandlerShow)
+
 	auth := r.Group("/")
+
 	auth.Use(middleware.AuthorisedCheck())
+	auth.GET("/api/auth/me", func(c *gin.Context) {
+		userRoleValue, existsRole := c.Get("userRole")
+		if !existsRole {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"role": userRoleValue})
+	})
 	//Добавление пользователя
 	auth.POST("/api/adduser", handler.AddUserHandler)
 	auth.GET("/adduser", handler.AddUserHandlerShow)
 	//Главная
-	auth.GET("/", handler.IndexHandlerShow)
+	auth.GET("/employee", handler.IndexHandlerShow)
 	auth.GET("/api/", handler.IndexHandler)
 	//Добавление экспертизы
 	auth.GET("/addexp", handler.AddExpHandlerShow)
