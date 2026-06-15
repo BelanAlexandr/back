@@ -18,7 +18,7 @@ func AddExpRepo(exp models.Exp) error {
 
 	queryJournal := `
 		INSERT INTO electronic_journal (
-			creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
+			creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
 			name_naznch, second_name_naznch, patronymic_naznch, 
 			question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
 			srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
