@@ -13,7 +13,7 @@ func IndexGetRepo(lastID int, limit int, statusFilter string, dateFrom string, d
 
 	query := `
         SELECT 
-            id, creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
+            id, creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
             name_naznch, second_name_naznch, patronymic_naznch,
             question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
             srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
@@ -103,7 +103,7 @@ func IndexGetEmployeeRepo(creator_id int, lastID int, limit int, statusFilter st
 
 	query := `
         SELECT 
-            id, creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
+            id, creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
             name_naznch, second_name_naznch, patronymic_naznch,
             question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
             srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
@@ -218,7 +218,7 @@ func fillExpertsForExps(ctx context.Context, exps []models.Exp) error {
 			&journalID,
 			&expert.Id,
 			&expert.Name,
-			&expert.LastName,
+			&expert.Second_Name,
 			&expert.Patronymic,
 		)
 		if err != nil {

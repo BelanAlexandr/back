@@ -1,10 +1,10 @@
 package models
 
 type Expert struct {
-	Id         int    `json:"id"`
-	Name       string `json:"name" validate:"required"`
-	LastName   string `json:"last_name" validate:"required"` // Использовал last_name вместо second_name
-	Patronymic string `json:"patronymic"`
+	Id          int    `json:"id"`
+	Name        string `json:"name" validate:"required"`
+	Second_Name string `json:"second_name" validate:"required"` // Использовал last_name вместо second_name
+	Patronymic  string `json:"patronymic"`
 }
 type Exp struct {
 	Id                 int     `json:"id"`

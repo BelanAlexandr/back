@@ -95,7 +95,7 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		err := rows.Scan(
 			&expUser.Id,
 			&expUser.Name,
-			&expUser.LastName, // Будет мапиться в вашу структуру LastName
+			&expUser.Second_Name, // Будет мапиться в вашу структуру LastName
 			&expUser.Patronymic,
 		)
 		if err != nil {

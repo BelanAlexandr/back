@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -64,9 +65,10 @@ func IndexHandler(c *gin.Context) {
 
 	tables, err := service.IndexGetService(userId, userRole, lastID, limit, statusFilter, dateFrom, dateTo)
 	if err != nil {
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить данные: " + err.Error()})
 		return
 	}
-
+	fmt.Println(tables)
 	c.JSON(http.StatusOK, tables)
 }

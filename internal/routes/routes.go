@@ -36,8 +36,9 @@ func Routes() *gin.Engine {
 	auth.POST("/api/adduser", handler.AddUserHandler)
 	auth.GET("/adduser", handler.AddUserHandlerShow)
 	//Главная
-	auth.GET("/employee", handler.IndexHandlerShow)
+	auth.GET("/api/expertiza/list", handler.IndexHandler)
 	auth.GET("/api/", handler.IndexHandler)
+
 	//Добавление экспертизы
 	auth.GET("/addexp", handler.AddExpHandlerShow)
 	auth.GET("/api/addexp/regions", handler.GetRegionsHandler)
