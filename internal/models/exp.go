@@ -1,5 +1,11 @@
 package models
 
+type Expert struct {
+	Id         int    `json:"id"`
+	Name       string `json:"name" validate:"required"`
+	LastName   string `json:"last_name" validate:"required"` // Использовал last_name вместо second_name
+	Patronymic string `json:"patronymic"`
+}
 type Exp struct {
 	Id                 int     `json:"id"`
 	Creator_id         int     `json:"creator_id" validate:"required"`
@@ -13,11 +19,14 @@ type Exp struct {
 	Name_Naznch        string  `json:"name_naznch" validate:"required"`
 	Second_Name_Naznch string  `json:"second_name_naznch" validate:"required"`
 	Patronymic_Naznch  *string `json:"patronymic_naznch"`
-	Name_Exp           string  `json:"name_exp" validate:"required"`
-	Second_Name_Exp    string  `json:"second_name_exp" validate:"required"`
-	Patronymic_Exp     *string `json:"patronymic_exp"`
-	Question_Count     int     `json:"question_count" validate:"required"`
-	Object_Count       int     `json:"object_count" validate:"required"`
+
+	// --- ИЗМЕНЕНИЯ ТУТ: Вместо трех полей теперь слайс экспертов ---
+	Experts []Expert `json:"experts" validate:"required,dive"`
+	// тег dive заставит валидатор проверить каждого эксперта внутри слайса
+	// ---------------------------------------------------------------
+
+	Question_Count int `json:"question_count" validate:"required"`
+	Object_Count   int `json:"object_count" validate:"required"`
 
 	Srok_Exp      *int    `json:"srok_exp"`
 	Stop_Date     *string `json:"stop_date"`

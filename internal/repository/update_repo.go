@@ -8,29 +8,35 @@ import (
 )
 
 func UpdateExpRepo(exp models.Exp, closed bool) error {
-	if closed {
-		exp.Is_Closed = true
-	} else {
-		exp.Is_Closed = false
+	ctx := context.Background()
+	exp.Is_Closed = closed
+
+	// 1. Начинаем транзакцию
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
 	}
-	query := `
+	defer tx.Rollback()
+
+	// 2. Обновляем саму экспертизу (убрали name_exp, second_name_exp, patronymic_exp)
+	// Всего параметров теперь 39 (38 полей для UPDATE + 1 для WHERE)
+	queryJournal := `
 		UPDATE electronic_journal 
 		SET 
 			creator_id = $1, data_post = $2, fab = $3, adm_material = $4, nom_statyi = $5, 
 			vid_exp = $6, organ = $7, name_organ = $8, name_naznch = $9, second_name_naznch = $10, 
-			patronymic_naznch = $11, name_exp = $12, second_name_exp = $13, patronymic_exp = $14, 
-			question_count = $15, object_count = $16, srok_exp = $17, stop_date = $18, 
-			stop_reason = $19, resuming_date = $20, srok_resuming = $21, end_date = $22, 
-			day_count = $23, exp_day_count = $24, cat_vivod = $25, possible_vivod = $26, 
-			impossible_vivod = $27, hour_count = $28, expert_cost = $29, material_cost = $30, 
-			exploitation_cost = $31, full_cost = $32, full_cost_nds = $33, descrip = $34, 
-			is_closed = $35, stat_id = $36, category_id = $37, region_id = $38, 
-			iz_nix_id = $39, diff_cat_id = $40, exp_res_id = $41
-		WHERE id = $42;`
+			patronymic_naznch = $11, question_count = $12, object_count = $13, srok_exp = $14, 
+			stop_date = $15, stop_reason = $16, resuming_date = $17, srok_resuming = $18, 
+			end_date = $19, day_count = $20, exp_day_count = $21, cat_vivod = $22, 
+			possible_vivod = $23, impossible_vivod = $24, hour_count = $25, expert_cost = $26, 
+			material_cost = $27, exploitation_cost = $28, full_cost = $29, full_cost_nds = $30, 
+			descrip = $31, is_closed = $32, stat_id = $33, category_id = $34, region_id = $35, 
+			iz_nix_id = $36, diff_cat_id = $37, exp_res_id = $38
+		WHERE id = $39;`
 
-	result, err := db.ExecContext(
-		context.Background(),
-		query,
+	result, err := tx.ExecContext(
+		ctx,
+		queryJournal,
 		exp.Creator_id,         // $1
 		exp.Data_Post,          // $2
 		exp.Fab,                // $3
@@ -42,37 +48,34 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		exp.Name_Naznch,        // $9
 		exp.Second_Name_Naznch, // $10
 		exp.Patronymic_Naznch,  // $11
-		exp.Name_Exp,           // $12
-		exp.Second_Name_Exp,    // $13
-		exp.Patronymic_Exp,     // $14
-		exp.Question_Count,     // $15
-		exp.Object_Count,       // $16
-		exp.Srok_Exp,           // $17
-		exp.Stop_Date,          // $18
-		exp.Stop_Reason,        // $19
-		exp.Resuming_Date,      // $20
-		exp.Srok_Resuming,      // $21
-		exp.End_Date,           // $22
-		exp.Day_Count,          // $23
-		exp.Exp_Day_Count,      // $24
-		exp.Cat_Vivod,          // $25
-		exp.Possible_Vivod,     // $26
-		exp.Impossible_Vivod,   // $27
-		exp.Hour_Count,         // $28
-		exp.Expert_Cost,        // $29
-		exp.Material_Cost,      // $30
-		exp.Exploitation_Cost,  // $31
-		exp.Full_Cost,          // $32
-		exp.Full_Cost_Nds,      // $33
-		exp.Descrip,            // $34
-		exp.Is_Closed,          // $35
-		exp.Stat_Id,            // $36
-		exp.Category_Id,        // $37
-		exp.Region_Id,          // $38
-		exp.Iz_Nix_Id,          // $39
-		exp.Diff_Cat_Id,        // $40
-		exp.Exp_Res_Id,         // $41
-		exp.Id,                 // $42 (ID для условия WHERE)
+		exp.Question_Count,     // $12
+		exp.Object_Count,       // $13
+		exp.Srok_Exp,           // $14
+		exp.Stop_Date,          // $15
+		exp.Stop_Reason,        // $16
+		exp.Resuming_Date,      // $17
+		exp.Srok_Resuming,      // $18
+		exp.End_Date,           // $19
+		exp.Day_Count,          // $20
+		exp.Exp_Day_Count,      // $21
+		exp.Cat_Vivod,          // $22
+		exp.Possible_Vivod,     // $23
+		exp.Impossible_Vivod,   // $24
+		exp.Hour_Count,         // $25
+		exp.Expert_Cost,        // $26
+		exp.Material_Cost,      // $27
+		exp.Exploitation_Cost,  // $28
+		exp.Full_Cost,          // $29
+		exp.Full_Cost_Nds,      // $30
+		exp.Descrip,            // $31
+		exp.Is_Closed,          // $32
+		exp.Stat_Id,            // $33
+		exp.Category_Id,        // $34
+		exp.Region_Id,          // $35
+		exp.Iz_Nix_Id,          // $36
+		exp.Diff_Cat_Id,        // $37
+		exp.Exp_Res_Id,         // $38
+		exp.Id,                 // $39 ( WHERE id = )
 	)
 	if err != nil {
 		return err
@@ -86,5 +89,25 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		return fmt.Errorf("экспертиза с id %d не найдена для обновления", exp.Id)
 	}
 
-	return nil
+	// 3. Удаляем ВСЕ старые связи этой экспертизы с экспертами
+	queryDeleteLinks := `DELETE FROM electronic_journal_experts WHERE journal_id = $1;`
+	_, err = tx.ExecContext(ctx, queryDeleteLinks, exp.Id)
+	if err != nil {
+		return err
+	}
+
+	// 4. Записываем обновленный список экспертов заново
+	queryInsertLinks := `
+		INSERT INTO electronic_journal_experts (journal_id, expert_id) 
+		VALUES ($1, $2);`
+
+	for _, expert := range exp.Experts {
+		_, err = tx.ExecContext(ctx, queryInsertLinks, exp.Id, expert.Id)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 5. Коммитим транзакцию, если все этапы прошли успешно
+	return tx.Commit()
 }

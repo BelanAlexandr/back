@@ -9,10 +9,13 @@ import (
 )
 
 func GetJournalRow(id int) (exp models.Exp, err error) {
-	query := `
+	ctx := context.Background()
+
+	// 1. Первый запрос: получаем данные самой экспертизы (без старых полей эксперта)
+	queryJournal := `
 		SELECT 
-			data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
-			name_naznch, second_name_naznch, patronymic_naznch, name_exp, second_name_exp, patronymic_exp,
+			id, creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
+			name_naznch, second_name_naznch, patronymic_naznch,
 			question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
 			srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
 			impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
@@ -20,7 +23,10 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 			diff_cat_id, exp_res_id
 		FROM electronic_journal
 		WHERE id = $1;`
-	err = db.QueryRowContext(context.Background(), query, id).Scan(
+
+	err = db.QueryRowContext(ctx, queryJournal, id).Scan(
+		&exp.Id, // Полезно тоже считать ID, раз он есть в структуре
+		&exp.Creator_id,
 		&exp.Data_Post,
 		&exp.Fab,
 		&exp.Adm_Material,
@@ -31,9 +37,6 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		&exp.Name_Naznch,
 		&exp.Second_Name_Naznch,
 		&exp.Patronymic_Naznch,
-		&exp.Name_Exp,
-		&exp.Second_Name_Exp,
-		&exp.Patronymic_Exp,
 		&exp.Question_Count,
 		&exp.Object_Count,
 		&exp.Srok_Exp,
@@ -62,12 +65,49 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		&exp.Diff_Cat_Id,
 		&exp.Exp_Res_Id,
 	)
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-
 			return exp, errors.New("expertise not found")
 		}
 		return exp, err
 	}
-	return exp, err
+
+	// 2. Второй запрос: достаем всех экспертов для этой экспертизы
+	queryExperts := `
+		SELECT e.id, e.name, e.second_name, e.patronymic
+		FROM dict_expert e
+		JOIN electronic_journal_experts eje ON e.id = eje.expert_id
+		WHERE eje.journal_id = $1;`
+
+	rows, err := db.QueryContext(ctx, queryExperts, id)
+	if err != nil {
+		return exp, err
+	}
+	defer rows.Close()
+
+	// Инициализируем слайс, чтобы в JSON прилетало [] вместо null, если экспертов вдруг нет
+	exp.Experts = make([]models.Expert, 0)
+
+	// Сканируем строки в цикле
+	for rows.Next() {
+		var expUser models.Expert
+		err := rows.Scan(
+			&expUser.Id,
+			&expUser.Name,
+			&expUser.LastName, // Будет мапиться в вашу структуру LastName
+			&expUser.Patronymic,
+		)
+		if err != nil {
+			return exp, err
+		}
+		exp.Experts = append(exp.Experts, expUser)
+	}
+
+	// Проверяем, не возникло ли ошибок при итерации по строкам
+	if err = rows.Err(); err != nil {
+		return exp, err
+	}
+
+	return exp, nil
 }
