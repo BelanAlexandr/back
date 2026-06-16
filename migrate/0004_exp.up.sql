@@ -19,9 +19,3 @@ ALTER TABLE electronic_journal
     DROP COLUMN IF EXISTS patronymic_exp,
     DROP COLUMN IF EXISTS exp_id; -- На всякий случай, если уже создали
 
--- 3. Создаем таблицу связи «многие ко многим»
-CREATE TABLE electronic_journal_experts (
-    journal_id INTEGER REFERENCES electronic_journal(id) ON DELETE CASCADE,
-    expert_id INTEGER REFERENCES dict_expert(id) ON DELETE CASCADE,
-    PRIMARY KEY (journal_id, expert_id) -- Защищает от дублирования связи
-);
