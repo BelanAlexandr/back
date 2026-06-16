@@ -5,8 +5,6 @@ CREATE TABLE dict_expert (
     second_name VARCHAR(255) NOT NULL,
     patronymic VARCHAR(255) NOT NULL -- Исправил опечатку в patronymic
 );
--- 1. Удаляем одиночную колонку из журнала, она больше не нужна
-ALTER TABLE electronic_journal DROP COLUMN IF EXISTS exp_id;
 
 -- 2. Создаем таблицу связей
 CREATE TABLE electronic_journal_experts (

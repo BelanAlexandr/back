@@ -3,27 +3,37 @@ package models
 type Expert struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name" validate:"required"`
-	Second_Name string `json:"second_name" validate:"required"` // Использовал last_name вместо second_name
-	Patronymic  string `json:"patronymic"`
+	Second_Name string `json:"second_name" validate:"required"`
+	Patronymic  string `json:"patronymic,omitempty"` // Исправили опечатку с двумя запятыми
 }
-type Exp struct {
-	Id                 int     `json:"id"`
-	Creator_id         int     `json:"creator_id" validate:"required"`
-	Data_Post          string  `json:"data_post" validate:"required"`
-	Fab                string  `json:"fab" validate:"required"`
-	Adm_Material       int     `json:"adm_material" validate:"required"`
-	Nom_Statyi         string  `json:"nom_statyi" validate:"required"`
-	Vid_Exp            int     `json:"vid_exp" validate:"required"`
-	Organ              string  `json:"organ" validate:"required"`
-	Name_Organ         string  `json:"name_organ" validate:"required"`
-	Name_Naznch        string  `json:"name_naznch" validate:"required"`
-	Second_Name_Naznch string  `json:"second_name_naznch" validate:"required"`
-	Patronymic_Naznch  *string `json:"patronymic_naznch"`
 
-	// --- ИЗМЕНЕНИЯ ТУТ: Вместо трех полей теперь слайс экспертов ---
-	Experts []Expert `json:"experts" validate:"required,dive"`
-	// тег dive заставит валидатор проверить каждого эксперта внутри слайса
-	// ---------------------------------------------------------------
+// -------------------------------------------------------------------------
+// Облегченная структура СТРОКИ ТАБЛИЦЫ для MUI DataGrid.
+// Теперь фронтенд будет получать ТОЛЬКО эти 5 параметров. Никакого мусора!
+// -------------------------------------------------------------------------
+type ExpListItem struct {
+	Id        int      `json:"id"`
+	Data_Post string   `json:"data_post"`
+	Is_Closed bool     `json:"is_closed"`
+	Fab       string   `json:"fab"`
+	Experts   []Expert `json:"experts"`
+}
+
+// Полная структура (остается для создания, редактирования и валидации)
+type Exp struct {
+	Id                 int      `json:"id"`
+	Creator_id         int      `json:"creator_id" validate:"required"`
+	Data_Post          string   `json:"data_post" validate:"required"`
+	Fab                string   `json:"fab" validate:"required"`
+	Adm_Material       int      `json:"adm_material" validate:"required"`
+	Nom_Statyi         string   `json:"nom_statyi" validate:"required"`
+	Vid_Exp            int      `json:"vid_exp" validate:"required"`
+	Organ              string   `json:"organ" validate:"required"`
+	Name_Organ         string   `json:"name_organ" validate:"required"`
+	Name_Naznch        string   `json:"name_naznch" validate:"required"`
+	Second_Name_Naznch string   `json:"second_name_naznch" validate:"required"`
+	Patronymic_Naznch  *string  `json:"patronymic_naznch"`
+	Experts            []Expert `json:"experts" validate:"required,dive"`
 
 	Question_Count int `json:"question_count" validate:"required"`
 	Object_Count   int `json:"object_count" validate:"required"`
@@ -34,15 +44,14 @@ type Exp struct {
 	Resuming_Date *string `json:"resuming_date"`
 	Srok_Resuming *int    `json:"srok_resuming"`
 
-	End_Date         *string `json:"end_date" validate:"required_if=Is_Closed true"`
-	Day_Count        *int    `json:"day_count" validate:"required_if=Is_Closed true"`
-	Exp_Day_Count    *int    `json:"exp_day_count" validate:"required_if=Is_Closed true"`
-	Cat_Vivod        *int    `json:"cat_vivod" validate:"required_if=Is_Closed true"`
-	Possible_Vivod   *int    `json:"possible_vivod" validate:"required_if=Is_Closed true"`
-	Impossible_Vivod *int    `json:"impossible_vivod" validate:"required_if=Is_Closed true"`
-	Hour_Count       *int    `json:"hour_count" validate:"required_if=Is_Closed true"`
-	Exp_Res_Id       *int    `json:"exp_res_id" validate:"required_if=Is_Closed true"`
-
+	End_Date          *string  `json:"end_date" validate:"required_if=Is_Closed true"`
+	Day_Count         *int     `json:"day_count" validate:"required_if=Is_Closed true"`
+	Exp_Day_Count     *int     `json:"exp_day_count" validate:"required_if=Is_Closed true"`
+	Cat_Vivod         *int     `json:"cat_vivod" validate:"required_if=Is_Closed true"`
+	Possible_Vivod    *int     `json:"possible_vivod" validate:"required_if=Is_Closed true"`
+	Impossible_Vivod  *int     `json:"impossible_vivod" validate:"required_if=Is_Closed true"`
+	Hour_Count        *int     `json:"hour_count" validate:"required_if=Is_Closed true"`
+	Exp_Res_Id        *int     `json:"exp_res_id" validate:"required_if=Is_Closed true"`
 	Expert_Cost       *float64 `json:"expert_cost"`
 	Material_Cost     *float64 `json:"material_cost"`
 	Exploitation_Cost *float64 `json:"exploitation_cost"`

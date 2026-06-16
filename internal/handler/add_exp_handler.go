@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"text/template"
 
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/repository"
@@ -11,21 +10,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func AddExpHandlerShow(c *gin.Context) {
-	userRoleValue, existsRole := c.Get("userRole")
-	if !existsRole || userRoleValue == models.RoleDirector {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
-		return
-	}
-
-	tmpl, err := template.ParseFiles("internal/templates/index.html")
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	tmpl.Execute(c.Writer, nil)
-}
 func AddExpHandler(c *gin.Context) {
 	fmt.Println("1")
 	userRoleValue, existsRole := c.Get("userRole")

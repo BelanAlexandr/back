@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/BelanAlexandr/back/internal/models"
 )
@@ -13,9 +14,10 @@ func AddExpRepo(exp models.Exp) error {
 	if err != nil {
 		return err
 	}
-
+	// В случае ошибки или паники все изменения автоматически откатятся
 	defer tx.Rollback()
 
+	// 1. ВСТАВКА ЗАПИСИ В ЖУРНАЛ ЭКСПЕРТИЗ
 	queryJournal := `
 		INSERT INTO electronic_journal (
 			creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
@@ -78,16 +80,44 @@ func AddExpRepo(exp models.Exp) error {
 		return err
 	}
 
+	// Запросы для проверки существования и для создания нового эксперта
+	queryCheckExpert := `
+		SELECT id FROM dict_expert 
+		WHERE name = $1 AND second_name = $2 AND patronymic = $3;`
+
+	queryCreateExpert := `
+		INSERT INTO dict_expert (name, second_name, patronymic) 
+		VALUES ($1, $2, $3) RETURNING id;`
+
 	queryLinks := `
 		INSERT INTO electronic_journal_experts (journal_id, expert_id) 
 		VALUES ($1, $2);`
 
+	// 2. ОБРАБОТКА МАССИВА ЭКСПЕРТОВ
 	for _, expert := range exp.Experts {
-		_, err = tx.ExecContext(ctx, queryLinks, journalID, expert.Id)
+		var expertID int
+
+		// Проверяем по ФИО, есть ли уже такой эксперт в справочнике
+		err = tx.QueryRowContext(ctx, queryCheckExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
+
+		if err == sql.ErrNoRows {
+			// Эксперт не найден — создаем новую запись в справочнике
+			err = tx.QueryRowContext(ctx, queryCreateExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
+			if err != nil {
+				return err
+			}
+		} else if err != nil {
+			// Любая другая ошибка при чтении из базы данных
+			return err
+		}
+
+		// Связываем экспертизу со справочным (или только что созданным) ID эксперта
+		_, err = tx.ExecContext(ctx, queryLinks, journalID, expertID)
 		if err != nil {
 			return err
 		}
 	}
 
+	// Закрепляем все изменения в базе данных
 	return tx.Commit()
 }

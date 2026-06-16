@@ -11,26 +11,30 @@ import (
 func GetJournalRow(id int) (exp models.Exp, err error) {
 	ctx := context.Background()
 
-	// 1. Первый запрос: получаем данные самой экспертизы (без старых полей эксперта)
+	// Исправленные имена столбцов: "№adm_material" и "№stati" обернуты в кавычки с алиасами
 	queryJournal := `
-		SELECT 
-			id, creator_id, data_post, fab, adm_material, nom_statyi, vid_exp, organ, name_organ,
-			name_naznch, second_name_naznch, patronymic_naznch,
-			question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
-			srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
-			impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
-			full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
-			diff_cat_id, exp_res_id
-		FROM electronic_journal
-		WHERE id = $1;`
+        SELECT 
+            id, creator_id, data_post, fab, 
+            "№adm_material" AS adm_material, 
+            "№stati" AS nom_statyi, 
+            vid_exp, organ, name_organ,
+            name_naznch, second_name_naznch, patronymic_naznch,
+            question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
+            srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
+            impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
+            full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
+            diff_cat_id, exp_res_id
+        FROM electronic_journal
+        WHERE id = $1;`
 
+	// Переменные для Scan остаются прежними, данные запишутся корректно благодаря AS
 	err = db.QueryRowContext(ctx, queryJournal, id).Scan(
-		&exp.Id, // Полезно тоже считать ID, раз он есть в структуре
+		&exp.Id,
 		&exp.Creator_id,
 		&exp.Data_Post,
 		&exp.Fab,
-		&exp.Adm_Material,
-		&exp.Nom_Statyi,
+		&exp.Adm_Material, // сюда запишется "№adm_material"
+		&exp.Nom_Statyi,   // сюда запишется "№stati"
 		&exp.Vid_Exp,
 		&exp.Organ,
 		&exp.Name_Organ,
@@ -73,12 +77,12 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		return exp, err
 	}
 
-	// 2. Второй запрос: достаем всех экспертов для этой экспертизы
+	// 2. Вторая часть запроса (эксперты) остается без изменений
 	queryExperts := `
-		SELECT e.id, e.name, e.second_name, e.patronymic
-		FROM dict_expert e
-		JOIN electronic_journal_experts eje ON e.id = eje.expert_id
-		WHERE eje.journal_id = $1;`
+        SELECT e.id, e.name, e.second_name, e.patronymic
+        FROM dict_expert e
+        JOIN electronic_journal_experts eje ON e.id = eje.expert_id
+        WHERE eje.journal_id = $1;`
 
 	rows, err := db.QueryContext(ctx, queryExperts, id)
 	if err != nil {
@@ -86,16 +90,14 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 	}
 	defer rows.Close()
 
-	// Инициализируем слайс, чтобы в JSON прилетало [] вместо null, если экспертов вдруг нет
 	exp.Experts = make([]models.Expert, 0)
 
-	// Сканируем строки в цикле
 	for rows.Next() {
 		var expUser models.Expert
 		err := rows.Scan(
 			&expUser.Id,
 			&expUser.Name,
-			&expUser.Second_Name, // Будет мапиться в вашу структуру LastName
+			&expUser.Second_Name,
 			&expUser.Patronymic,
 		)
 		if err != nil {
@@ -104,7 +106,6 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		exp.Experts = append(exp.Experts, expUser)
 	}
 
-	// Проверяем, не возникло ли ошибок при итерации по строкам
 	if err = rows.Err(); err != nil {
 		return exp, err
 	}

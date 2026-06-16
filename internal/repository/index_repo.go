@@ -8,7 +8,7 @@ import (
 	"github.com/lib/pq"
 )
 
-func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, int, error) {
+func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.ExpListItem, int, error) {
 	ctx := context.Background()
 
 	// 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ (COUNT)
@@ -49,7 +49,7 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 	}
 
 	if totalCount == 0 {
-		return make([]models.Exp, 0), 0, nil
+		return make([]models.ExpListItem, 0), 0, nil
 	}
 
 	// 2. ВЫБОРКА ТОЛЬКО ТЕХ ПОЛЕЙ, КОТОРЫЕ ОТОБРАЖАЮТСЯ В ТАБЛИЦЕ
@@ -76,9 +76,9 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 	}
 	defer rows.Close()
 
-	var exps []models.Exp
+	var exps []models.ExpListItem
 	for rows.Next() {
-		var exp models.Exp
+		var exp models.ExpListItem
 		// Сканируем только выбранные 4 поля. Остальные поля структуры models.Exp останутся дефолтными (нули/пустые строки)
 		err := rows.Scan(
 			&exp.Id,
@@ -108,7 +108,7 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 	return exps, totalCount, nil
 }
 
-func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, int, error) {
+func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.ExpListItem, int, error) {
 	ctx := context.Background()
 
 	// 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ СОТРУДНИКА
@@ -148,7 +148,7 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 	}
 
 	if totalCount == 0 {
-		return make([]models.Exp, 0), 0, nil
+		return make([]models.ExpListItem, 0), 0, nil
 	}
 
 	// 2. ВЫБОРКА ТОЛЬКО ОТОБРАЖАЕМЫХ ПОЛЕЙ ДЛЯ СОТРУДНИКА
@@ -174,9 +174,9 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 	}
 	defer rows.Close()
 
-	var exps []models.Exp
+	var exps []models.ExpListItem
 	for rows.Next() {
-		var exp models.Exp
+		var exp models.ExpListItem
 		err := rows.Scan(
 			&exp.Id,
 			&exp.Data_Post,
@@ -205,7 +205,7 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 }
 
 // Функция fillExpertsForExps остается БЕЗ ИЗМЕНЕНИЙ (она вытаскивает только ФИО экспертов)
-func fillExpertsForExps(ctx context.Context, exps []models.Exp) error {
+func fillExpertsForExps(ctx context.Context, exps []models.ExpListItem) error {
 	journalIDs := make([]int, len(exps))
 	for i, exp := range exps {
 		journalIDs[i] = exp.Id
