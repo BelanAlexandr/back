@@ -5,13 +5,57 @@ import (
 	"fmt"
 
 	"github.com/BelanAlexandr/back/internal/models"
-	"github.com/lib/pq" // Важно: нужен для pq.Array, чтобы сделать эффективный запрос через ANY($1)
+	"github.com/lib/pq" // Важно для эффективного запроса через ANY($1)
 )
 
-func IndexGetRepo(lastID int, limit int, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, error) {
+func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, int, error) {
 	ctx := context.Background()
 
-	query := `
+	// --- 1. СНАЧАЛА СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ (COUNT) С УЧЕТОМ ФИЛЬТРОВ ---
+	countQuery := `SELECT COUNT(*) FROM electronic_journal WHERE 1=1`
+	var countArgs []interface{}
+	countPlaceholderIdx := 1
+
+	// Формируем условия фильтрации (одинаковые для COUNT и для SELECT)
+	filterSQL := ""
+	if statusFilter == "open" {
+		filterSQL += fmt.Sprintf(" AND is_closed = $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, false)
+		countPlaceholderIdx++
+	} else if statusFilter == "closed" {
+		filterSQL += fmt.Sprintf(" AND is_closed = $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, true)
+		countPlaceholderIdx++
+	}
+
+	if dateFrom != "" && dateTo != "" {
+		filterSQL += fmt.Sprintf(" AND data_post BETWEEN $%d AND $%d", countPlaceholderIdx, countPlaceholderIdx+1)
+		countArgs = append(countArgs, dateFrom, dateTo)
+		countPlaceholderIdx += 2
+	} else if dateFrom != "" {
+		filterSQL += fmt.Sprintf(" AND data_post >= $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, dateFrom)
+		countPlaceholderIdx++
+	} else if dateTo != "" {
+		filterSQL += fmt.Sprintf(" AND data_post <= $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, dateTo)
+		countPlaceholderIdx++
+	}
+
+	// Выполняем запрос COUNT
+	var totalCount int
+	err := db.QueryRowContext(ctx, countQuery+filterSQL, countArgs...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Если в БД вообще нет записей под этот фильтр, нет смысла делать тяжелый выборку
+	if totalCount == 0 {
+		return make([]models.Exp, 0), 0, nil
+	}
+
+	// --- 2. ПОЛУЧАЕМ ДАННЫЕ С ТЕКУЩЕЙ СТРАНИЦЫ ---
+	selectQuery := `
         SELECT 
             id, creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
             name_naznch, second_name_naznch, patronymic_naznch,
@@ -21,41 +65,34 @@ func IndexGetRepo(lastID int, limit int, statusFilter string, dateFrom string, d
             full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
             diff_cat_id, exp_res_id
         FROM electronic_journal
-        WHERE id < $1`
+        WHERE 1=1`
 
-	args := []interface{}{lastID}
-	placeholderIdx := 2
+	// Копируем аргументы фильтрации для основного запроса
+	selectArgs := make([]interface{}, len(countArgs))
+	copy(selectArgs, countArgs)
+	selectPlaceholderIdx := countPlaceholderIdx
 
-	if statusFilter == "open" {
-		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
-		args = append(args, false)
-		placeholderIdx++
-	} else if statusFilter == "closed" {
-		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
-		args = append(args, true)
-		placeholderIdx++
+	// Подставляем динамическую сортировку (sortField и sortOrder безопасны, проверены в Handler)
+	// Важно: если на бэке поле называется №adm_material или №stati, подставляем корректные имена для SQL
+	sqlSortField := sortField
+	if sortField == "adm_material" {
+		sqlSortField = "№adm_material"
+	} else if sortField == "state" {
+		sqlSortField = "№stati"
 	}
 
-	if dateFrom != "" && dateTo != "" {
-		query += fmt.Sprintf(" AND data_post BETWEEN $%d AND $%d", placeholderIdx, placeholderIdx+1)
-		args = append(args, dateFrom, dateTo)
-		placeholderIdx += 2
-	} else if dateFrom != "" {
-		query += fmt.Sprintf(" AND data_post >= $%d", placeholderIdx)
-		args = append(args, dateFrom)
-		placeholderIdx++
-	} else if dateTo != "" {
-		query += fmt.Sprintf(" AND data_post <= $%d", placeholderIdx)
-		args = append(args, dateTo)
-		placeholderIdx++
-	}
+	orderBySQL := fmt.Sprintf(" ORDER BY %s %s", sqlSortField, sortOrder)
 
-	query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d;", placeholderIdx)
-	args = append(args, limit)
+	// Добавляем LIMIT и OFFSET под пагинацию MUI
+	paginationSQL := fmt.Sprintf(" LIMIT $%d OFFSET $%d;", selectPlaceholderIdx, selectPlaceholderIdx+1)
+	selectArgs = append(selectArgs, limit, offset)
 
-	rows, err := db.QueryContext(ctx, query, args...)
+	// Собираем всё воедино
+	finalQuery := selectQuery + filterSQL + orderBySQL + paginationSQL
+
+	rows, err := db.QueryContext(ctx, finalQuery, selectArgs...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -74,34 +111,71 @@ func IndexGetRepo(lastID int, limit int, statusFilter string, dateFrom string, d
 			&exp.Region_Id, &exp.Iz_Nix_Id, &exp.Diff_Cat_Id, &exp.Exp_Res_Id,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
-		// Инициализируем слайс экспертов сразу, чтобы избежать null в JSON
 		exp.Experts = make([]models.Expert, 0)
 		exps = append(exps, exp)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	// Если экспертиз нет, возвращаем пустой слайс
-	if len(exps) == 0 {
-		return exps, nil
+	if len(exps) > 0 {
+		// Подтягиваем экспертов одной пачкой через ANY
+		if err := fillExpertsForExps(ctx, exps); err != nil {
+			return nil, 0, err
+		}
 	}
 
-	// Привязываем экспертов ко всему списку за 1 запрос к БД
-	if err := fillExpertsForExps(ctx, exps); err != nil {
-		return nil, err
-	}
-
-	return exps, nil
+	return exps, totalCount, nil
 }
 
-func IndexGetEmployeeRepo(creator_id int, lastID int, limit int, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, error) {
+func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, int, error) {
 	ctx := context.Background()
 
-	query := `
+	// --- 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ СОТРУДНИКА (COUNT) ---
+	countQuery := `SELECT COUNT(*) FROM electronic_journal WHERE creator_id = $1`
+	countArgs := []interface{}{creator_id}
+	countPlaceholderIdx := 2
+
+	filterSQL := ""
+	if statusFilter == "open" {
+		filterSQL += fmt.Sprintf(" AND is_closed = $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, false)
+		countPlaceholderIdx++
+	} else if statusFilter == "closed" {
+		filterSQL += fmt.Sprintf(" AND is_closed = $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, true)
+		countPlaceholderIdx++
+	}
+
+	if dateFrom != "" && dateTo != "" {
+		filterSQL += fmt.Sprintf(" AND data_post BETWEEN $%d AND $%d", countPlaceholderIdx, countPlaceholderIdx+1)
+		countArgs = append(countArgs, dateFrom, dateTo)
+		countPlaceholderIdx += 2
+	} else if dateFrom != "" {
+		filterSQL += fmt.Sprintf(" AND data_post >= $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, dateFrom)
+		countPlaceholderIdx++
+	} else if dateTo != "" {
+		filterSQL += fmt.Sprintf(" AND data_post <= $%d", countPlaceholderIdx)
+		countArgs = append(countArgs, dateTo)
+		countPlaceholderIdx++
+	}
+
+	var totalCount int
+	err := db.QueryRowContext(ctx, countQuery+filterSQL, countArgs...).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if totalCount == 0 {
+		return make([]models.Exp, 0), 0, nil
+	}
+
+	// --- 2. ВЫБОРКА СТРОК ДЛЯ СОТРУДНИКА ---
+	selectQuery := `
         SELECT 
             id, creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
             name_naznch, second_name_naznch, patronymic_naznch,
@@ -111,41 +185,28 @@ func IndexGetEmployeeRepo(creator_id int, lastID int, limit int, statusFilter st
             full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
             diff_cat_id, exp_res_id
         FROM electronic_journal
-        WHERE id < $1 AND creator_id = $2`
+        WHERE creator_id = $1`
 
-	args := []interface{}{lastID, creator_id}
-	placeholderIdx := 3
+	selectArgs := make([]interface{}, len(countArgs))
+	copy(selectArgs, countArgs)
+	selectPlaceholderIdx := countPlaceholderIdx
 
-	if statusFilter == "open" {
-		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
-		args = append(args, false)
-		placeholderIdx++
-	} else if statusFilter == "closed" {
-		query += fmt.Sprintf(" AND is_closed = $%d", placeholderIdx)
-		args = append(args, true)
-		placeholderIdx++
+	sqlSortField := sortField
+	if sortField == "adm_material" {
+		sqlSortField = "№adm_material"
+	} else if sortField == "state" {
+		sqlSortField = "№stati"
 	}
 
-	if dateFrom != "" && dateTo != "" {
-		query += fmt.Sprintf(" AND data_post BETWEEN $%d AND $%d", placeholderIdx, placeholderIdx+1)
-		args = append(args, dateFrom, dateTo)
-		placeholderIdx += 2
-	} else if dateFrom != "" {
-		query += fmt.Sprintf(" AND data_post >= $%d", placeholderIdx)
-		args = append(args, dateFrom)
-		placeholderIdx++
-	} else if dateTo != "" {
-		query += fmt.Sprintf(" AND data_post <= $%d", placeholderIdx)
-		args = append(args, dateTo)
-		placeholderIdx++
-	}
+	orderBySQL := fmt.Sprintf(" ORDER BY %s %s", sqlSortField, sortOrder)
+	paginationSQL := fmt.Sprintf(" LIMIT $%d OFFSET $%d;", selectPlaceholderIdx, selectPlaceholderIdx+1)
+	selectArgs = append(selectArgs, limit, offset)
 
-	query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d;", placeholderIdx)
-	args = append(args, limit)
+	finalQuery := selectQuery + filterSQL + orderBySQL + paginationSQL
 
-	rows, err := db.QueryContext(ctx, query, args...)
+	rows, err := db.QueryContext(ctx, finalQuery, selectArgs...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -164,38 +225,32 @@ func IndexGetEmployeeRepo(creator_id int, lastID int, limit int, statusFilter st
 			&exp.Region_Id, &exp.Iz_Nix_Id, &exp.Diff_Cat_Id, &exp.Exp_Res_Id,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		exp.Experts = make([]models.Expert, 0)
 		exps = append(exps, exp)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	if len(exps) == 0 {
-		return exps, nil
+	if len(exps) > 0 {
+		if err := fillExpertsForExps(ctx, exps); err != nil {
+			return nil, 0, err
+		}
 	}
 
-	// Привязываем экспертов ко всему списку за 1 запрос к БД
-	if err := fillExpertsForExps(ctx, exps); err != nil {
-		return nil, err
-	}
-
-	return exps, nil
+	return exps, totalCount, nil
 }
 
-// Вспомогательная функция для эффективной загрузки экспертов пакетом
+// Вспомогательная функция (fillExpertsForExps) остаётся БЕЗ ИЗМЕНЕНИЙ, так как она уже написана идеально
 func fillExpertsForExps(ctx context.Context, exps []models.Exp) error {
-	// Сначала собираем все ID полученных экспертиз в один срез
 	journalIDs := make([]int, len(exps))
 	for i, exp := range exps {
 		journalIDs[i] = exp.Id
 	}
 
-	// Запрашиваем из БД экспертов сразу для ВСЕХ этих журналов.
-	// Конструкция eje.journal_id = ANY($1) позволяет передать массив ID.
 	queryExperts := `
         SELECT eje.journal_id, e.id, e.name, e.second_name, e.patronymic
         FROM dict_expert e
@@ -208,19 +263,11 @@ func fillExpertsForExps(ctx context.Context, exps []models.Exp) error {
 	}
 	defer rows.Close()
 
-	// Используем мапу списков для временной группировки экспертов по ID журнала
 	expertsMap := make(map[int][]models.Expert)
-
 	for rows.Next() {
 		var journalID int
 		var expert models.Expert
-		err := rows.Scan(
-			&journalID,
-			&expert.Id,
-			&expert.Name,
-			&expert.Second_Name,
-			&expert.Patronymic,
-		)
+		err := rows.Scan(&journalID, &expert.Id, &expert.Name, &expert.Second_Name, &expert.Patronymic)
 		if err != nil {
 			return err
 		}
@@ -231,13 +278,10 @@ func fillExpertsForExps(ctx context.Context, exps []models.Exp) error {
 		return err
 	}
 
-	// Раскладываем экспертов из мапы по исходным структурам экспертиз.
-	// Так как в Go структуры в слайсе передаются по значению, обходим слайс по индексам.
 	for i := range exps {
 		if experts, ok := expertsMap[exps[i].Id]; ok {
 			exps[i].Experts = experts
 		}
 	}
-
 	return nil
 }
