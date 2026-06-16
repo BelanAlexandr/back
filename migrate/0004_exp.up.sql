@@ -1,3 +1,10 @@
+ALTER TABLE electronic_journal
+    DROP COLUMN IF EXISTS name_exp,
+    DROP COLUMN IF EXISTS second_name_exp,
+    DROP COLUMN IF EXISTS patronymic_exp,
+    DROP COLUMN IF EXISTS exp_id; -- На всякий случай, если уже создали
+
+
 DROP TABLE IF EXISTS dict_expert;
 DROP TABLE IF EXISTS electronic_journal_experts;
 -- 1. Создаем справочник экспертов (как у вас)
@@ -15,9 +22,3 @@ CREATE TABLE electronic_journal_experts (
     PRIMARY KEY (journal_id, expert_id) -- Гарантирует, что одного и того же эксперта не привяжут к одной экспертизе дважды
 );
 -- 2. Удаляем старые текстовые колонки из журнала
-ALTER TABLE electronic_journal
-    DROP COLUMN IF EXISTS name_exp,
-    DROP COLUMN IF EXISTS second_name_exp,
-    DROP COLUMN IF EXISTS patronymic_exp,
-    DROP COLUMN IF EXISTS exp_id; -- На всякий случай, если уже создали
-
