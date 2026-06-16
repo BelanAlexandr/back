@@ -4,9 +4,9 @@ ALTER TABLE electronic_journal
     DROP COLUMN IF EXISTS patronymic_exp,
     DROP COLUMN IF EXISTS exp_id; -- На всякий случай, если уже создали
 
+DROP TABLE IF EXISTS electronic_journal_experts CASCADE;
+DROP TABLE IF EXISTS dict_expert CASCADE;
 
-DROP TABLE IF EXISTS dict_expert;
-DROP TABLE IF EXISTS electronic_journal_experts;
 -- 1. Создаем справочник экспертов (как у вас)
 CREATE TABLE dict_expert (
     id SERIAL PRIMARY KEY,
