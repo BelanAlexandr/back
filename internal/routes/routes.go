@@ -44,9 +44,9 @@ func Routes() *gin.Engine {
 	auth.POST("/api/expertiza/save", handler.AddExpHandler)
 	//Закрытие экспертизы
 	auth.GET("/closeexp", handler.CloseExpHandlerShow)
-	auth.PATCH("/api/closeexp", handler.CloseExpHandler)
+	auth.PUT("/api/expertize/:id/complete", handler.CloseExpHandler)
 	//Редактирование
 	auth.GET("/api/expertiza/:id", handler.EditExpHandlerShow)
-	auth.PATCH("/api/expertiza/:id", handler.EditExpHandler)
+	auth.PUT("/api/expertiza/update/:id", handler.EditExpHandler)
 	return r
 }

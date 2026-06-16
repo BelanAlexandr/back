@@ -25,7 +25,7 @@ func CloseExpHandler(c *gin.Context) {
 	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 	// 	return
 	// }
-	idStr := c.Query("id")
+	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})

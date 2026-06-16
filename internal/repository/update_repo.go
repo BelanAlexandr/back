@@ -10,20 +10,21 @@ import (
 func UpdateExpRepo(exp models.Exp, closed bool) error {
 	ctx := context.Background()
 	exp.Is_Closed = closed
-
+	fmt.Println(exp.Is_Closed)
 	// 1. Начинаем транзакцию
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	// В случае паники или ошибки defer автоматически откатит транзакцию
 	defer tx.Rollback()
 
-	// 2. Обновляем саму экспертизу (убрали name_exp, second_name_exp, patronymic_exp)
-	// Всего параметров теперь 39 (38 полей для UPDATE + 1 для WHERE)
+	// 2. Обновляем саму экспертизу
+	// ВНИМАНИЕ: "№adm_material" и "№stati" обернуты в двойные кавычки!
 	queryJournal := `
 		UPDATE electronic_journal 
 		SET 
-			creator_id = $1, data_post = $2, fab = $3, adm_material = $4, nom_statyi = $5, 
+			creator_id = $1, data_post = $2, fab = $3, "№adm_material" = $4, "№stati" = $5, 
 			vid_exp = $6, organ = $7, name_organ = $8, name_naznch = $9, second_name_naznch = $10, 
 			patronymic_naznch = $11, question_count = $12, object_count = $13, srok_exp = $14, 
 			stop_date = $15, stop_reason = $16, resuming_date = $17, srok_resuming = $18, 
@@ -34,14 +35,15 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 			iz_nix_id = $36, diff_cat_id = $37, exp_res_id = $38
 		WHERE id = $39;`
 
+	// Передаваемые параметры ($1-$39) остаются без изменений, так как структура Go хранит их верно
 	result, err := tx.ExecContext(
 		ctx,
 		queryJournal,
 		exp.Creator_id,         // $1
 		exp.Data_Post,          // $2
 		exp.Fab,                // $3
-		exp.Adm_Material,       // $4
-		exp.Nom_Statyi,         // $5
+		exp.Adm_Material,       // $4 -> уйдет в "№adm_material"
+		exp.Nom_Statyi,         // $5 -> уйдет в "№stati"
 		exp.Vid_Exp,            // $6
 		exp.Organ,              // $7
 		exp.Name_Organ,         // $8
@@ -75,7 +77,7 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		exp.Iz_Nix_Id,          // $36
 		exp.Diff_Cat_Id,        // $37
 		exp.Exp_Res_Id,         // $38
-		exp.Id,                 // $39 ( WHERE id = )
+		exp.Id,                 // $39
 	)
 	if err != nil {
 		return err
