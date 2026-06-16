@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS dict_expert
-DROP TABLE IF EXISTS electronic_journal_experts
+DROP TABLE IF EXISTS dict_expert;
+DROP TABLE IF EXISTS electronic_journal_experts;
 -- 1. Создаем справочник экспертов (как у вас)
 CREATE TABLE dict_expert (
     id SERIAL PRIMARY KEY,
