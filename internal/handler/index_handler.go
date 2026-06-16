@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -26,7 +25,6 @@ func IndexHandlerShow(c *gin.Context) {
 
 	tmpl.Execute(c.Writer, nil)
 }
-
 func IndexHandler(c *gin.Context) {
 	userRoleValue, existsRole := c.Get("userRole")
 	userIdValue, existsID := c.Get("userID")
@@ -41,15 +39,14 @@ func IndexHandler(c *gin.Context) {
 		return
 	}
 
-	// 1. ПАГИНАЦИЯ под MUI DataGrid (переходим с last_id на page/pageSize)
-	// MUI присылает страницу, начиная с 0 (page=0 — первая страница)
+	// Пагинация под MUI DataGrid
 	pageStr := c.DefaultQuery("page", "0")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 0 {
 		page = 0
 	}
 
-	pageSizeStr := c.DefaultQuery("limit", "25") // Переименовано или оставлено limit под pageSizeOptions={[25, 50, 100]}
+	pageSizeStr := c.DefaultQuery("limit", "25")
 	limit, err := strconv.Atoi(pageSizeStr)
 	if err != nil || limit <= 0 {
 		limit = 25
@@ -59,15 +56,20 @@ func IndexHandler(c *gin.Context) {
 		limit = maxLimit
 	}
 
-	// Вычисляем OFFSET для SQL-запроса: (номер страницы * размер страницы)
 	offset := page * limit
 
-	// 2. СОРТИРОВКА (MUI DataGrid присылает их при клике на заголовки колонок)
-	sortField := c.DefaultQuery("sort_field", "id")   // по умолчанию сортируем по id
-	sortOrder := c.DefaultQuery("sort_order", "desc") // по умолчанию свежие сверху
+	// СОРТИРОВКА: оставляем строго только 3 параметра, которые есть в таблице
+	sortField := c.DefaultQuery("sort_field", "id")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
 
-	// Валидация полей сортировки во избежание SQL-инъекций
-	allowedFields := map[string]bool{"id": true, "data_post": true, "is_closed": true}
+	// White-list: разрешаем сортировку ТОЛЬКО по этим трем колонкам
+	allowedFields := map[string]bool{
+		"id":        true,
+		"data_post": true,
+		"is_closed": true,
+	}
+
+	// Если пришло что-то другое, сбрасываем на сортировку по умолчанию (по ID)
 	if !allowedFields[sortField] {
 		sortField = "id"
 	}
@@ -75,27 +77,21 @@ func IndexHandler(c *gin.Context) {
 		sortOrder = "desc"
 	}
 
-	// 3. ФИЛЬТРЫ
+	// Фильтры
 	statusFilter := c.Query("status")
 	dateFrom := c.Query("date_from")
 	dateTo := c.Query("date_to")
 
-	// 4. ЗАПРОС К СЕРВИСУ
-	// Внимание: ваш service.IndexGetService должен быть обновлен!
-	// Теперь вместо lastID передается offset, limit, а также sortField и sortOrder.
-	// И теперь сервис должен возвращать ДВА значения: срез структур (rows) и общее число записей int (totalCount)
+	// Запрос к сервису
 	rows, totalCount, err := service.IndexGetService(userId, userRole, offset, limit, sortField, sortOrder, statusFilter, dateFrom, dateTo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить данные: " + err.Error()})
 		return
 	}
 
-	fmt.Printf("Fetched %d rows out of %d total\n", len(rows), totalCount)
-
-	// 5. ОТВЕТ ДЛЯ СЕРВЕРНОЙ ТАБЛИЦЫ
-	// Возвращаем объект, который без проблем распарсит фронтенд для DataGrid
+	// Ответ для MUI DataGrid
 	c.JSON(http.StatusOK, gin.H{
-		"rows":  rows,       // Массив записей для текущей страницы
-		"total": totalCount, // Общее количество подходящих под фильтр строк в БД
+		"rows":  rows,
+		"total": totalCount,
 	})
 }

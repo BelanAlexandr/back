@@ -5,18 +5,18 @@ import (
 	"fmt"
 
 	"github.com/BelanAlexandr/back/internal/models"
-	"github.com/lib/pq" // Важно для эффективного запроса через ANY($1)
+	"github.com/lib/pq"
 )
 
 func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, int, error) {
 	ctx := context.Background()
 
-	// --- 1. СНАЧАЛА СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ (COUNT) С УЧЕТОМ ФИЛЬТРОВ ---
+	// 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ (COUNT)
 	countQuery := `SELECT COUNT(*) FROM electronic_journal WHERE 1=1`
 	var countArgs []interface{}
 	countPlaceholderIdx := 1
 
-	// Формируем условия фильтрации (одинаковые для COUNT и для SELECT)
+	// Формируем условия фильтрации
 	filterSQL := ""
 	if statusFilter == "open" {
 		filterSQL += fmt.Sprintf(" AND is_closed = $%d", countPlaceholderIdx)
@@ -42,52 +42,32 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 		countPlaceholderIdx++
 	}
 
-	// Выполняем запрос COUNT
 	var totalCount int
 	err := db.QueryRowContext(ctx, countQuery+filterSQL, countArgs...).Scan(&totalCount)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Если в БД вообще нет записей под этот фильтр, нет смысла делать тяжелый выборку
 	if totalCount == 0 {
 		return make([]models.Exp, 0), 0, nil
 	}
 
-	// --- 2. ПОЛУЧАЕМ ДАННЫЕ С ТЕКУЩЕЙ СТРАНИЦЫ ---
+	// 2. ВЫБОРКА ТОЛЬКО ТЕХ ПОЛЕЙ, КОТОРЫЕ ОТОБРАЖАЮТСЯ В ТАБЛИЦЕ
+	// Оставляем строго: id, data_post, is_closed, fab
 	selectQuery := `
         SELECT 
-            id, creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
-            name_naznch, second_name_naznch, patronymic_naznch,
-            question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
-            srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
-            impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
-            full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
-            diff_cat_id, exp_res_id
+            id, data_post, is_closed, fab
         FROM electronic_journal
         WHERE 1=1`
 
-	// Копируем аргументы фильтрации для основного запроса
 	selectArgs := make([]interface{}, len(countArgs))
 	copy(selectArgs, countArgs)
 	selectPlaceholderIdx := countPlaceholderIdx
 
-	// Подставляем динамическую сортировку (sortField и sortOrder безопасны, проверены в Handler)
-	// Важно: если на бэке поле называется №adm_material или №stati, подставляем корректные имена для SQL
-	sqlSortField := sortField
-	if sortField == "adm_material" {
-		sqlSortField = "№adm_material"
-	} else if sortField == "state" {
-		sqlSortField = "№stati"
-	}
-
-	orderBySQL := fmt.Sprintf(" ORDER BY %s %s", sqlSortField, sortOrder)
-
-	// Добавляем LIMIT и OFFSET под пагинацию MUI
+	orderBySQL := fmt.Sprintf(" ORDER BY %s %s", sortField, sortOrder)
 	paginationSQL := fmt.Sprintf(" LIMIT $%d OFFSET $%d;", selectPlaceholderIdx, selectPlaceholderIdx+1)
 	selectArgs = append(selectArgs, limit, offset)
 
-	// Собираем всё воедино
 	finalQuery := selectQuery + filterSQL + orderBySQL + paginationSQL
 
 	rows, err := db.QueryContext(ctx, finalQuery, selectArgs...)
@@ -99,16 +79,12 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 	var exps []models.Exp
 	for rows.Next() {
 		var exp models.Exp
+		// Сканируем только выбранные 4 поля. Остальные поля структуры models.Exp останутся дефолтными (нули/пустые строки)
 		err := rows.Scan(
-			&exp.Id, &exp.Creator_id, &exp.Data_Post, &exp.Fab, &exp.Adm_Material, &exp.Nom_Statyi,
-			&exp.Vid_Exp, &exp.Organ, &exp.Name_Organ, &exp.Name_Naznch, &exp.Second_Name_Naznch,
-			&exp.Patronymic_Naznch,
-			&exp.Question_Count, &exp.Object_Count, &exp.Srok_Exp, &exp.Stop_Date, &exp.Stop_Reason,
-			&exp.Resuming_Date, &exp.Srok_Resuming, &exp.End_Date, &exp.Day_Count, &exp.Exp_Day_Count,
-			&exp.Cat_Vivod, &exp.Possible_Vivod, &exp.Impossible_Vivod, &exp.Hour_Count,
-			&exp.Expert_Cost, &exp.Material_Cost, &exp.Exploitation_Cost, &exp.Full_Cost,
-			&exp.Full_Cost_Nds, &exp.Descrip, &exp.Is_Closed, &exp.Stat_Id, &exp.Category_Id,
-			&exp.Region_Id, &exp.Iz_Nix_Id, &exp.Diff_Cat_Id, &exp.Exp_Res_Id,
+			&exp.Id,
+			&exp.Data_Post,
+			&exp.Is_Closed,
+			&exp.Fab,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -121,8 +97,9 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 		return nil, 0, err
 	}
 
+	// 3. ДОЗАГРУЖАЕМ ЭКСПЕРТОВ ДЛЯ ЭТИХ СТРОК
+	// Функция fillExpertsForExps отработает отлично, так как ей нужен только exp.Id
 	if len(exps) > 0 {
-		// Подтягиваем экспертов одной пачкой через ANY
 		if err := fillExpertsForExps(ctx, exps); err != nil {
 			return nil, 0, err
 		}
@@ -134,7 +111,7 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.Exp, int, error) {
 	ctx := context.Background()
 
-	// --- 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ СОТРУДНИКА (COUNT) ---
+	// 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ СОТРУДНИКА
 	countQuery := `SELECT COUNT(*) FROM electronic_journal WHERE creator_id = $1`
 	countArgs := []interface{}{creator_id}
 	countPlaceholderIdx := 2
@@ -174,16 +151,10 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 		return make([]models.Exp, 0), 0, nil
 	}
 
-	// --- 2. ВЫБОРКА СТРОК ДЛЯ СОТРУДНИКА ---
+	// 2. ВЫБОРКА ТОЛЬКО ОТОБРАЖАЕМЫХ ПОЛЕЙ ДЛЯ СОТРУДНИКА
 	selectQuery := `
         SELECT 
-            id, creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
-            name_naznch, second_name_naznch, patronymic_naznch,
-            question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
-            srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
-            impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
-            full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
-            diff_cat_id, exp_res_id
+            id, data_post, is_closed, fab
         FROM electronic_journal
         WHERE creator_id = $1`
 
@@ -191,14 +162,7 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 	copy(selectArgs, countArgs)
 	selectPlaceholderIdx := countPlaceholderIdx
 
-	sqlSortField := sortField
-	if sortField == "adm_material" {
-		sqlSortField = "№adm_material"
-	} else if sortField == "state" {
-		sqlSortField = "№stati"
-	}
-
-	orderBySQL := fmt.Sprintf(" ORDER BY %s %s", sqlSortField, sortOrder)
+	orderBySQL := fmt.Sprintf(" ORDER BY %s %s", sortField, sortOrder)
 	paginationSQL := fmt.Sprintf(" LIMIT $%d OFFSET $%d;", selectPlaceholderIdx, selectPlaceholderIdx+1)
 	selectArgs = append(selectArgs, limit, offset)
 
@@ -214,15 +178,10 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 	for rows.Next() {
 		var exp models.Exp
 		err := rows.Scan(
-			&exp.Id, &exp.Creator_id, &exp.Data_Post, &exp.Fab, &exp.Adm_Material, &exp.Nom_Statyi,
-			&exp.Vid_Exp, &exp.Organ, &exp.Name_Organ, &exp.Name_Naznch, &exp.Second_Name_Naznch,
-			&exp.Patronymic_Naznch,
-			&exp.Question_Count, &exp.Object_Count, &exp.Srok_Exp, &exp.Stop_Date, &exp.Stop_Reason,
-			&exp.Resuming_Date, &exp.Srok_Resuming, &exp.End_Date, &exp.Day_Count, &exp.Exp_Day_Count,
-			&exp.Cat_Vivod, &exp.Possible_Vivod, &exp.Impossible_Vivod, &exp.Hour_Count,
-			&exp.Expert_Cost, &exp.Material_Cost, &exp.Exploitation_Cost, &exp.Full_Cost,
-			&exp.Full_Cost_Nds, &exp.Descrip, &exp.Is_Closed, &exp.Stat_Id, &exp.Category_Id,
-			&exp.Region_Id, &exp.Iz_Nix_Id, &exp.Diff_Cat_Id, &exp.Exp_Res_Id,
+			&exp.Id,
+			&exp.Data_Post,
+			&exp.Is_Closed,
+			&exp.Fab,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -235,6 +194,7 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 		return nil, 0, err
 	}
 
+	// 3. ДОЗАГРУЖАЕМ ЭКСПЕРТОВ ДЛЯ ЭТИХ СТРОК
 	if len(exps) > 0 {
 		if err := fillExpertsForExps(ctx, exps); err != nil {
 			return nil, 0, err
@@ -244,7 +204,7 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 	return exps, totalCount, nil
 }
 
-// Вспомогательная функция (fillExpertsForExps) остаётся БЕЗ ИЗМЕНЕНИЙ, так как она уже написана идеально
+// Функция fillExpertsForExps остается БЕЗ ИЗМЕНЕНИЙ (она вытаскивает только ФИО экспертов)
 func fillExpertsForExps(ctx context.Context, exps []models.Exp) error {
 	journalIDs := make([]int, len(exps))
 	for i, exp := range exps {
