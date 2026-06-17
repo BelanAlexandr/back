@@ -9,10 +9,6 @@ import (
 // Предполагается, что db *sql.DB доступен в пакете repository
 
 func EditUserRepo(user models.User) error {
-	// 1. Проверяем, передан ли новый пароль.
-	// Если пароль пустой, мы обновляем все поля, кроме пароля.
-	// Если пароль заполнен, мы обновляем и его тоже (не забудьте захэшировать его перед отправкой в репозиторий!).
-
 	var query string
 	var err error
 
@@ -38,10 +34,11 @@ func EditUserRepo(user models.User) error {
 			user.Middle_Name,
 			user.Email,
 			user.Phone_Number,
-			user.Id, // ID идет последним аргументом ($8)
+			user.Id, // $8 соответствует user.Id
 		)
 	} else {
 		// Полное обновление ВМЕСТЕ с паролем
+		// ВНИМАНИЕ: тут теперь 9 параметров! Исправлены индексы $7, $8, $9
 		query = `
             UPDATE users 
             SET login = $1, 
@@ -64,12 +61,11 @@ func EditUserRepo(user models.User) error {
 			user.Middle_Name,
 			user.Email,
 			user.Phone_Number,
-			user.Id, // ID идет последним аргументом ($9)
+			user.Id, // Теперь это $9, все четко совпадает
 		)
 	}
 
 	if err != nil {
-		// Печатаем в консоль для отладки, но наружу отдаем понятную ошибку
 		fmt.Println("Ошибка при обновлении пользователя в БД:", err)
 		return fmt.Errorf("не удалось обновить данные пользователя: %w", err)
 	}
