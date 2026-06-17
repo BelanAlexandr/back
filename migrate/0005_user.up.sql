@@ -13,4 +13,3 @@ WHERE first_name IS NULL;
 -- Шаг 3: Теперь, когда пустых значений нет, принудительно включаем NOT NULL
 ALTER TABLE users ALTER COLUMN first_name SET NOT NULL;
 ALTER TABLE users ALTER COLUMN last_name SET NOT NULL;
-ALTER TABLE users ALTER COLUMN middle_name SET NOT NULL;
