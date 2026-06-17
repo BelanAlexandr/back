@@ -3,14 +3,13 @@ package handler
 import (
 	"net/http"
 
-	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 func GetRegionsHandler(c *gin.Context) {
-	userRoleValue, existsRole := c.Get("userRole")
-	if !existsRole || userRoleValue == models.RoleDirector {
+	_, existsRole := c.Get("userRole")
+	if !existsRole {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
