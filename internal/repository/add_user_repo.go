@@ -22,8 +22,8 @@ func AddUserRepo(user models.User) error {
 	}
 
 	query := `
-        INSERT INTO users (login, pass, role, first_name, last_name, email, phone) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO users (login, pass, role, first_name, last_name,middle_name, email, phone) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7,$8)
     `
 
 	_, err = db.Exec(
@@ -31,8 +31,9 @@ func AddUserRepo(user models.User) error {
 		user.Login,
 		user.Password,
 		user.Role,
-		user.Name,         // сопоставляется с first_name
-		user.Second_Name,  // сопоставляется с last_name
+		user.Name, // сопоставляется с first_name
+		user.Second_Name,
+		user.Middle_Name,  // сопоставляется с last_name
 		user.Email,        // сопоставляется с email
 		user.Phone_Number, // сопоставляется с phone
 	)
