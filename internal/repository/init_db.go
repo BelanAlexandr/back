@@ -16,25 +16,32 @@ var db *sql.DB
 func InitDB(cfg *config.Config) {
 	connStr := cfg.ConnectionString
 	base, err := sql.Open("postgres", connStr)
+
+	log.Println("Подключение к базе данных по DB_CONN_STR...")
+
 	if err != nil {
-		panic(err)
+		log.Fatalf("Ошибка открытия БД: %v", err)
 	}
+
+	if err := base.Ping(); err != nil {
+		log.Fatalf("База данных недоступна: %v", err)
+	}
+
+	// Миграции
 	driver, err := postgres.WithInstance(base, &postgres.Config{})
 	if err != nil {
 		log.Fatalf("Не удалось создать драйвер миграций: %v", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrate",
-		"postgres",
-		driver,
-	)
+	m, err := migrate.NewWithDatabaseInstance("file://migrate", "postgres", driver)
 	if err != nil {
 		log.Fatalf("Ошибка инициализации мигратора: %v", err)
 	}
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatalf("Ошибка применения миграций: %v", err)
 	}
+
 	db = base
+	log.Println("База успешно инициализирована, миграции применены!")
 }

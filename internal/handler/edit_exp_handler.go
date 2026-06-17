@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -47,9 +46,9 @@ func EditExpHandler(c *gin.Context) {
 	var req models.Exp
 	req.Id = id
 	validate := validator.New()
-	fmt.Println("4")
+
 	if err := validate.Struct(req); err != nil {
-		fmt.Println(err)
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
 		return
 	}

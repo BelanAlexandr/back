@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/BelanAlexandr/back/internal/models"
@@ -11,13 +10,13 @@ import (
 )
 
 func AddExpHandler(c *gin.Context) {
-	fmt.Println("1")
+
 	userRoleValue, existsRole := c.Get("userRole")
 	if !existsRole || userRoleValue == models.RoleDirector {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
-	fmt.Println("2")
+
 	userIdValue, existsID := c.Get("userID")
 	userId, ok1 := userIdValue.(int)
 	if !existsID || !ok1 {
@@ -25,23 +24,23 @@ func AddExpHandler(c *gin.Context) {
 		return
 	}
 	var req models.Exp
-	fmt.Println("3")
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	req.Creator_id = userId
 	validate := validator.New()
-	fmt.Println("4")
+
 	if err := validate.Struct(req); err != nil {
-		fmt.Println(err)
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
 		return
 	}
-	fmt.Println("aaa")
+
 	err := repository.AddExpRepo(req)
 	if err != nil {
-		fmt.Println(err)
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить данные: " + err.Error()})
 		return
 	}

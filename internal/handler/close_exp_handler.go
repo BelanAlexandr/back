@@ -10,9 +10,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func CloseExpHandlerShow(c *gin.Context) {
-
-}
 func CloseExpHandler(c *gin.Context) {
 	userRoleValue, existsRole := c.Get("userRole")
 	if !existsRole || userRoleValue == models.RoleDirector {

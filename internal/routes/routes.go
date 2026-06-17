@@ -12,15 +12,13 @@ import (
 func Routes() *gin.Engine {
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"}, // Адрес вашего фронта
+		AllowOrigins:     []string{"http://localhost:3000"}, // Адрес вашего фронта
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 	//Авторизация
 	r.POST("/api/login", handler.LoginHandler)
-	r.GET("/login", handler.LoginHandlerShow)
-
 	auth := r.Group("/")
 
 	auth.Use(middleware.AuthorisedCheck())
@@ -45,7 +43,6 @@ func Routes() *gin.Engine {
 	auth.GET("/api/regions", handler.GetRegionsHandler)
 	auth.POST("/api/expertiza/save", handler.AddExpHandler)
 	//Закрытие экспертизы
-	auth.GET("/closeexp", handler.CloseExpHandlerShow)
 	auth.PUT("/api/expertize/:id/complete", handler.CloseExpHandler)
 	//Редактирование
 	auth.GET("/api/expertiza/:id", handler.EditExpHandlerShow)

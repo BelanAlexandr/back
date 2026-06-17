@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 	"strings"
-	"text/template"
 
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
@@ -29,14 +28,4 @@ func LoginHandler(c *gin.Context) {
 
 	c.SetCookie("token", token, 3600, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"role": role})
-}
-func LoginHandlerShow(c *gin.Context) {
-
-	tmpl, err := template.ParseFiles("internal/templates/login.html")
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-
-	tmpl.Execute(c.Writer, nil)
 }
