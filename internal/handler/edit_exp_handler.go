@@ -44,16 +44,17 @@ func EditExpHandler(c *gin.Context) {
 		return
 	}
 	var req models.Exp
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	req.Id = id
 	validate := validator.New()
 
 	if err := validate.Struct(req); err != nil {
 
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
-		return
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	err = service.EditExpService(req)
