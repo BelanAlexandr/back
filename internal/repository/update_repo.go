@@ -2,25 +2,25 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
+// Передаем ctx аргументом, чтобы контролировать таймауты и отмену запросов со стороны клиента
 func UpdateExpRepo(exp models.Exp, closed bool) error {
-	ctx := context.Background()
 	exp.Is_Closed = closed
-	fmt.Println(exp.Is_Closed)
+	ctx := context.Background()
 	// 1. Начинаем транзакцию
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	// В случае паники или ошибки defer автоматически откатит транзакцию
+	// Гарантированный откат в случае panic или раннего return err
 	defer tx.Rollback()
 
-	// 2. Обновляем саму экспертизу
-	// ВНИМАНИЕ: "№adm_material" и "№stati" обернуты в двойные кавычки!
+	// 2. Обновляем основную запись экспертизы
 	queryJournal := `
 		UPDATE electronic_journal 
 		SET 
@@ -35,15 +35,14 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 			iz_nix_id = $36, diff_cat_id = $37, exp_res_id = $38
 		WHERE id = $39;`
 
-	// Передаваемые параметры ($1-$39) остаются без изменений, так как структура Go хранит их верно
 	result, err := tx.ExecContext(
 		ctx,
 		queryJournal,
 		exp.Creator_id,         // $1
 		exp.Data_Post,          // $2
 		exp.Fab,                // $3
-		exp.Adm_Material,       // $4 -> уйдет в "№adm_material"
-		exp.Nom_Statyi,         // $5 -> уйдет в "№stati"
+		exp.Adm_Material,       // $4
+		exp.Nom_Statyi,         // $5
 		exp.Vid_Exp,            // $6
 		exp.Organ,              // $7
 		exp.Name_Organ,         // $8
@@ -80,7 +79,7 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		exp.Id,                 // $39
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update electronic_journal: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -91,22 +90,48 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		return fmt.Errorf("экспертиза с id %d не найдена для обновления", exp.Id)
 	}
 
-	// 3. Удаляем ВСЕ старые связи этой экспертизы с экспертами
+	// 3. Удаляем СТАРЫЕ связи этой экспертизы с экспертами (подготовка к перезаписи)
 	queryDeleteLinks := `DELETE FROM electronic_journal_experts WHERE journal_id = $1;`
 	_, err = tx.ExecContext(ctx, queryDeleteLinks, exp.Id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete old links: %w", err)
 	}
 
-	// 4. Записываем обновленный список экспертов заново
-	queryInsertLinks := `
+	// Подготовка SQL-запросов для цикла экспертов
+	queryCheckExpert := `
+		SELECT id FROM dict_expert 
+		WHERE name = $1 AND second_name = $2 AND patronymic = $3;`
+
+	queryCreateExpert := `
+		INSERT INTO dict_expert (name, second_name, patronymic) 
+		VALUES ($1, $2, $3) RETURNING id;`
+
+	queryLinks := `
 		INSERT INTO electronic_journal_experts (journal_id, expert_id) 
 		VALUES ($1, $2);`
 
+	// 4. ОБРАБОТКА МАССИВА ЭКСПЕРТОВ (Поиск / Создание -> Привязка)
 	for _, expert := range exp.Experts {
-		_, err = tx.ExecContext(ctx, queryInsertLinks, exp.Id, expert.Id)
+		var expertID int
+
+		// Проверяем по ФИО, есть ли уже такой эксперт в справочнике
+		err = tx.QueryRowContext(ctx, queryCheckExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
+
+		if err == sql.ErrNoRows {
+			// Эксперт не найден — создаем новую запись в справочнике
+			err = tx.QueryRowContext(ctx, queryCreateExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
+			if err != nil {
+				return fmt.Errorf("failed to create new expert %s: %w", expert.Name, err)
+			}
+		} else if err != nil {
+			// Любая другая ошибка при чтении из базы данных
+			return fmt.Errorf("failed to check expert: %w", err)
+		}
+
+		// Теперь точно связываем экспертизу с валидным ID эксперта (новым или старым)
+		_, err = tx.ExecContext(ctx, queryLinks, exp.Id, expertID)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to link expert %d to journal %d: %w", expertID, exp.Id, err)
 		}
 	}
 
