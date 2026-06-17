@@ -12,8 +12,8 @@ import (
 )
 
 func EditExpHandlerShow(c *gin.Context) {
-	userRoleValue, existsRole := c.Get("userRole")
-	if !existsRole || userRoleValue == models.RoleDirector {
+	_, existsRole := c.Get("userRole")
+	if !existsRole {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
