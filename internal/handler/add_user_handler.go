@@ -42,5 +42,5 @@ func AddUserHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Redirect(http.StatusFound, "/")
+	c.JSON(http.StatusOK, err)
 }
