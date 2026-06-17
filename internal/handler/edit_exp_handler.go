@@ -32,11 +32,16 @@ func EditExpHandlerShow(c *gin.Context) {
 }
 func EditExpHandler(c *gin.Context) {
 	userRoleValue, existsRole := c.Get("userRole")
-	if !existsRole || userRoleValue == models.RoleDirector {
+	userIdValue, existsId := c.Get("userID")
+	if !existsRole || !existsId || userRoleValue == models.RoleDirector {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
-
+	userId, ok1 := userIdValue.(int)
+	if !ok1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -50,6 +55,7 @@ func EditExpHandler(c *gin.Context) {
 		return
 	}
 	req.Id = id
+	req.Creator_id = userId
 	validate := validator.New()
 
 	if err := validate.Struct(req); err != nil {
