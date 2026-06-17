@@ -21,9 +21,10 @@ func AddUserRepo(user models.User) error {
 		return fmt.Errorf("Такой логин уже есть")
 	}
 
+	// Используем NULLIF($7, '') и NULLIF($8, ''), чтобы пустые строки превращались в NULL
 	query := `
-        INSERT INTO users (login, pass, role, first_name, last_name,middle_name, email, phone) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7,$8)
+        INSERT INTO users (login, pass, role, first_name, last_name, middle_name, email, phone) 
+        VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), NULLIF($8, ''))
     `
 
 	_, err = db.Exec(
@@ -31,9 +32,9 @@ func AddUserRepo(user models.User) error {
 		user.Login,
 		user.Password,
 		user.Role,
-		user.Name, // сопоставляется с first_name
-		user.Second_Name,
-		user.Middle_Name,  // сопоставляется с last_name
+		user.Name,         // сопоставляется с first_name
+		user.Second_Name,  // сопоставляется с last_name
+		user.Middle_Name,  // сопоставляется с middle_name
 		user.Email,        // сопоставляется с email
 		user.Phone_Number, // сопоставляется с phone
 	)
