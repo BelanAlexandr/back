@@ -34,7 +34,7 @@ func Routes() *gin.Engine {
 	})
 	//Добавление пользователя
 	auth.POST("/api/users", handler.AddUserHandler)
-	auth.GET("/adduser", handler.AddUserHandlerShow)
+	auth.GET("/api/users", handler.ShowUserHandler)
 	//Главная
 	auth.GET("/api/expertiza/list", handler.IndexHandler)
 	auth.GET("/api/", handler.IndexHandler)
