@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"text/template"
@@ -8,6 +9,7 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 func AddUserHandlerShow(c *gin.Context) {
@@ -37,6 +39,13 @@ func AddUserHandler(c *gin.Context) {
 	}
 	req.Login = strings.TrimSpace(req.Login)
 	req.Password = strings.TrimSpace(req.Password)
+	validate := validator.New()
+	fmt.Println("4")
+	if err := validate.Struct(req); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
+		return
+	}
 	err := service.AddUserService(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

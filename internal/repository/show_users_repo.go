@@ -16,7 +16,7 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 	var totalCount int
 
 	// Базовые запросы
-	selectQuery := "SELECT id, login, pass, role, first_name, last_name, email, phone FROM users"
+	selectQuery := "SELECT id, login, role, first_name, last_name,middle_name, email, phone FROM users"
 	countQuery := "SELECT COUNT(*) FROM users"
 
 	var conditions []string
@@ -79,9 +79,9 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 	for rows.Next() {
 		var u models.User
 		// Используем sql.NullString на случай, если в БД новые поля пока еще NULL
-		var firstName, lastName, email, phone sql.NullString
+		var firstName, lastName, middlename, email, phone sql.NullString
 
-		err := rows.Scan(&u.Id, &u.Login, &u.Password, &u.Role, &firstName, &lastName, &email, &phone)
+		err := rows.Scan(&u.Id, &u.Login, &u.Role, &firstName, &lastName, &middlename, &email, &phone)
 		if err != nil {
 			return nil, 0, fmt.Errorf("ошибка сканирования пользователя: %w", err)
 		}
@@ -89,9 +89,10 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 		// Переносим значения из NullString в обычные строки нашей структуры
 		u.Name = firstName.String
 		u.Second_Name = lastName.String
+		u.Middle_Name = middlename.String
 		u.Email = email.String
 		u.Phone_Number = phone.String
-
+		u.Password = ""
 		users = append(users, u)
 	}
 

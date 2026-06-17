@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/BelanAlexandr/back/internal/repository"
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 func EditExpHandlerShow(c *gin.Context) {
@@ -44,6 +46,13 @@ func EditExpHandler(c *gin.Context) {
 	}
 	var req models.Exp
 	req.Id = id
+	validate := validator.New()
+	fmt.Println("4")
+	if err := validate.Struct(req); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
+		return
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
