@@ -33,7 +33,7 @@ func Routes() *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{"role": userRoleValue})
 	})
 	//Добавление пользователя
-	auth.POST("/api/adduser", handler.AddUserHandler)
+	auth.POST("/api/users", handler.AddUserHandler)
 	auth.GET("/adduser", handler.AddUserHandlerShow)
 	//Главная
 	auth.GET("/api/expertiza/list", handler.IndexHandler)
