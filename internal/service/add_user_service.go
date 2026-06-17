@@ -1,15 +1,17 @@
 package service
 
 import (
+	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func AddUserService(login, password string, role int) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func AddUserService(user models.User) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	return repository.AddUserRepo(login, string(hashedPassword), role)
+	user.Password = string(hashedPassword)
+	return repository.AddUserRepo(user)
 
 }

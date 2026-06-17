@@ -30,19 +30,14 @@ func AddUserHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
-	var req struct {
-		Login    string `json:"login"`
-		Password string `json:"password"`
-		Role     int    `json:"role"`
-	}
-
+	var req models.User
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	req.Login = strings.TrimSpace(req.Login)
 	req.Password = strings.TrimSpace(req.Password)
-	err := service.AddUserService(req.Login, req.Password, req.Role)
+	err := service.AddUserService(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
