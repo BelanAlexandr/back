@@ -28,7 +28,14 @@ func EditUserHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	err = service.EditUserService(req)
+	userIdValue, existsID := c.Get("userID")
+	userId, ok1 := userIdValue.(int)
+	if !existsID || !ok1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+		return
+	}
+
+	err = service.EditUserService(userId, req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 	}

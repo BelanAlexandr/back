@@ -135,6 +135,19 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		}
 	}
 
-	// 5. Коммитим транзакцию, если все этапы прошли успешно
+	// 5. ВЫЗОВ УВЕДОМЛЕНИЯ ВНУТРИ ТРАНЗАКЦИИ
+	var message string
+	if exp.Is_Closed {
+		message = fmt.Sprintf("Экспертиза №%d успешно закрыта", exp.Id)
+	} else {
+		message = fmt.Sprintf("Данные экспертизы №%d были успешно обновлены", exp.Id)
+	}
+
+	_, err = AddNotification(ctx, tx, exp.Creator_id, message)
+	if err != nil {
+		return fmt.Errorf("failed to create notification: %w", err)
+	}
+
+	// 6. Коммитим транзакцию, если все этапы прошли успешно
 	return tx.Commit()
 }

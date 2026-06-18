@@ -1,20 +1,29 @@
 package repository
 
 import (
+	"context"
+	"database/sql"
 	"log"
 
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-func AddNotification(user_id int, message string) (int, error) {
+func AddNotification(ctx context.Context, tx *sql.Tx, userID int, message string) (int, error) {
 	querySave := `
     INSERT INTO notifications (user_id, text, is_read, created_at) 
     VALUES ($1, $2, false, NOW())
     RETURNING id`
 
 	var lastInsertId int
+	var err error
 
-	err := db.QueryRow(querySave, user_id, message).Scan(&lastInsertId)
+	// Если транзакция передана, выполняем в ней. Если нет — используем стандартный db
+	if tx != nil {
+		err = tx.QueryRowContext(ctx, querySave, userID, message).Scan(&lastInsertId)
+	} else {
+		err = db.QueryRowContext(ctx, querySave, userID, message).Scan(&lastInsertId)
+	}
+
 	if err != nil {
 		log.Println("Ошибка сохранения уведомления в БД:", err)
 		return 0, err

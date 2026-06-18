@@ -30,7 +30,13 @@ func AddUserHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
 		return
 	}
-	err := service.AddUserService(req)
+	userIdValue, existsID := c.Get("userID")
+	userId, ok1 := userIdValue.(int)
+	if !existsID || !ok1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+		return
+	}
+	err := service.AddUserService(userId, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
