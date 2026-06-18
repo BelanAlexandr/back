@@ -12,7 +12,7 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	_ = godotenv.Load()
+	_ = godotenv.Load("../.env")
 	return &Config{
 		ConnectionString: os.Getenv("DB_CONN_STR"),
 		JwtSecret:        os.Getenv("JWT_SECRET"),

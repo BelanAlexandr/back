@@ -16,7 +16,7 @@ var db *sql.DB
 func InitDB(cfg *config.Config) {
 	connStr := cfg.ConnectionString
 	base, err := sql.Open("postgres", connStr)
-
+	log.Println(connStr)
 	log.Println("Подключение к базе данных по DB_CONN_STR...")
 
 	if err != nil {
