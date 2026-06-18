@@ -15,7 +15,9 @@ func CloseExpService(exp models.Exp) error {
 
 	total := getFloat(exp.Expert_Cost) + getFloat(exp.Material_Cost) + getFloat(exp.Exploitation_Cost)
 	exp.Full_Cost = &total
-	total = total + total*0.16
-	exp.Full_Cost_Nds = &total
+
+	totalnds := total + total*0.16
+	exp.Full_Cost_Nds = &totalnds
+
 	return repository.CloseExpRepo(exp, true)
 }
