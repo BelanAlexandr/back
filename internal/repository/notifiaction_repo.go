@@ -10,7 +10,7 @@ import (
 
 func AddNotification(ctx context.Context, tx *sql.Tx, userID int, message string) (int, error) {
 	querySave := `
-    INSERT INTO notifications (user_id, text, is_read, created_at) 
+    INSERT INTO notifications (user_id, mess, is_read, created_at) 
     VALUES ($1, $2, false, NOW())
     RETURNING id`
 
