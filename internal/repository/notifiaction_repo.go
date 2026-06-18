@@ -32,7 +32,7 @@ func AddNotification(ctx context.Context, tx *sql.Tx, userID int, message string
 	return lastInsertId, nil
 }
 func MarkAllNotifications(user_id int) error {
-	query := "UPDATE notifications SET is_read = true WHEREuser_id = $1"
+	query := "UPDATE notifications SET is_read = true WHERE user_id = $1"
 	_, err := db.Exec(query, user_id)
 	return err
 }
