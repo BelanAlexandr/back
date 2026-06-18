@@ -38,7 +38,7 @@ func MarkNotification(message_id, user_id int) error {
 }
 func GetNotifications(user_id int) ([]models.Notification, error) {
 	queryList := `
-    SELECT id, user_id, text, is_read, created_at 
+    SELECT id, user_id, mess, is_read, created_at 
     FROM notifications 
     WHERE user_id = $1
     ORDER BY id DESC 
