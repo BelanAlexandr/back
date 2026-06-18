@@ -5,3 +5,6 @@ DROP COLUMN IF EXISTS email,
 DROP COLUMN IF EXISTS middle_name,
 DROP COLUMN IF EXISTS phone;
 DROP TABLE IF EXIST notifications;
+DROP INDEX IF EXIST idx_filenames;
+DROP INDEX IF EXIST idx_users;
+DROP INDEX IF EXIST idx_notification;
