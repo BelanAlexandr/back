@@ -50,5 +50,6 @@ func Routes() *gin.Engine {
 	//Уведомления
 	auth.GET("/api/notifications", handler.GetNotifications)
 	auth.PUT("/api/notifications/read/:id", handler.SetMarkNotification)
+	auth.PUT("/api/notifications/read-all", handler.MarkAllNotification)
 	return r
 }

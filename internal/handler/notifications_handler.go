@@ -42,3 +42,17 @@ func SetMarkNotification(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, err)
 }
+func MarkAllNotification(c *gin.Context) {
+	userIdValue, existsID := c.Get("userID")
+	userId, ok1 := userIdValue.(int)
+	if !existsID || !ok1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+		return
+	}
+	err := repository.MarkAllNotifications(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка отметить уведомление как прочитанное"})
+		return
+	}
+	c.JSON(http.StatusOK, err)
+}
