@@ -2,6 +2,8 @@ package repository
 
 import (
 	"log"
+
+	"github.com/BelanAlexandr/back/internal/models"
 )
 
 func AddNotification(user_id int, message string) (int, error) {
@@ -19,4 +21,36 @@ func AddNotification(user_id int, message string) (int, error) {
 	}
 
 	return lastInsertId, nil
+}
+func MarkNotification(message_id, user_id int) error {
+	query := "UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2"
+	_, err := db.Exec(query, message_id, user_id)
+	return err
+}
+func GetNotifications(user_id int) ([]models.Notification, error) {
+	queryList := `
+    SELECT id, user_id, text, is_read, created_at 
+    FROM notifications 
+    WHERE user_id = $1
+    ORDER BY id DESC 
+    LIMIT 20`
+
+	rows, err := db.Query(queryList, user_id)
+	if err != nil {
+
+		return []models.Notification{}, err
+	}
+	defer rows.Close()
+
+	var notificationsFromDB []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		err := rows.Scan(&n.ID, &n.User_ID, &n.Text, &n.Is_read, &n.Created_at)
+		if err != nil {
+
+			return []models.Notification{}, err
+		}
+		notificationsFromDB = append(notificationsFromDB, n)
+	}
+	return notificationsFromDB, nil
 }

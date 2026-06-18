@@ -23,4 +23,4 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX idx_filenames ON electronic_journal(id,data_post,is_closed);
 CREATE INDEX idx_users ON users(id)
-CREATE INDEX idx_notification ON(user_id)
+CREATE INDEX idx_notification ON(id,user_id)

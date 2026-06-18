@@ -47,5 +47,8 @@ func Routes() *gin.Engine {
 	//Редактирование
 	auth.GET("/api/expertiza/:id", handler.EditExpHandlerShow)
 	auth.PUT("/api/expertiza/update/:id", handler.EditExpHandler)
+	//Уведомления
+	auth.GET("/api/notifications", handler.GetNotifications)
+	auth.PUT("/api/notifications/read/:id", handler.SetMarkNotification)
 	return r
 }
