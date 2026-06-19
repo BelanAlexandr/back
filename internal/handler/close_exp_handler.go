@@ -7,7 +7,6 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func CloseExpHandler(c *gin.Context) {
@@ -35,7 +34,7 @@ func CloseExpHandler(c *gin.Context) {
 	}
 	req.Id = id
 	req.Creator_id = userId
-	validate := validator.New()
+	validate := NewValidator()
 	if err := validate.Struct(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
 		return

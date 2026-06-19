@@ -6,7 +6,6 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/repository"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func AddExpHandler(c *gin.Context) {
@@ -30,7 +29,7 @@ func AddExpHandler(c *gin.Context) {
 		return
 	}
 	req.Creator_id = userId
-	validate := validator.New()
+	validate := NewValidator()
 
 	if err := validate.Struct(req); err != nil {
 
