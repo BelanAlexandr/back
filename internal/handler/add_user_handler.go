@@ -7,7 +7,6 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func AddUserHandler(c *gin.Context) {
@@ -23,7 +22,7 @@ func AddUserHandler(c *gin.Context) {
 	}
 	req.Login = strings.TrimSpace(req.Login)
 	req.Password = strings.TrimSpace(req.Password)
-	validate := validator.New()
+	validate := NewValidator()
 
 	if err := validate.Struct(req); err != nil {
 

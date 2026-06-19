@@ -8,7 +8,6 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 	"github.com/BelanAlexandr/back/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func EditUserHandler(c *gin.Context) {
@@ -32,7 +31,7 @@ func EditUserHandler(c *gin.Context) {
 	}
 	userIdValue, existsID := c.Get("userID")
 	userId, ok1 := userIdValue.(int)
-	validate := validator.New()
+	validate := NewValidator()
 
 	if err := validate.Struct(req); err != nil {
 
