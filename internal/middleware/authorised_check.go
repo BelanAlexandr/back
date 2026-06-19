@@ -31,9 +31,20 @@ func AuthorisedCheck() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		role, err := repository.AuthorisedCheck(int(idFloat))
+		role, session, err := repository.AuthorisedCheck(int(idFloat))
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+			c.Abort()
+			return
+		}
+		tokenSessionID, ok := claims["session_id"].(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "неверный формат сессии в токене"})
+			c.Abort()
+			return
+		}
+		if tokenSessionID != session {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Сессия устарела. Выполнен вход с другого устройства."})
 			c.Abort()
 			return
 		}

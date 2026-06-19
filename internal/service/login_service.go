@@ -19,7 +19,11 @@ func LoginService(login, password string) (string, int, error) {
 	if err != nil {
 		return "", 0, fmt.Errorf("invalid password")
 	}
-	token, err := utils.GenerateToken(user_id)
+	token, sessionId, err := utils.GenerateToken(user_id)
+	if err != nil {
+		return "", 0, err
+	}
+	err = repository.UpdateUserSession(user_id, sessionId)
 	if err != nil {
 		return "", 0, err
 	}

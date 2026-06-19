@@ -1,10 +1,10 @@
 package repository
 
-func AuthorisedCheck(id int) (rol int, err error) {
+func AuthorisedCheck(id int) (rol int, session string, err error) {
 	err = db.QueryRow(
-		"SELECT role FROM users WHERE id=$1",
+		"SELECT role,current_session_id FROM users WHERE id=$1",
 		id,
-	).Scan(&rol)
+	).Scan(&rol, &session)
 
-	return rol, err
+	return rol, session, err
 }
