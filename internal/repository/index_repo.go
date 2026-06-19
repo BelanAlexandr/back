@@ -105,7 +105,6 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.ExpListItem, int, error) {
 	ctx := context.Background()
 
-	// 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ СОТРУДНИКА
 	countQuery := `SELECT COUNT(*) FROM electronic_journal WHERE creator_id = $1`
 	countArgs := []interface{}{creator_id}
 	countPlaceholderIdx := 2
@@ -145,7 +144,6 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 		return make([]models.ExpListItem, 0), 0, nil
 	}
 
-	// 2. ВЫБОРКА ТОЛЬКО ОТОБРАЖАЕМЫХ ПОЛЕЙ ДЛЯ СОТРУДНИКА
 	selectQuery := `
         SELECT 
             id, data_post, is_closed, fab
@@ -188,7 +186,6 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 		return nil, 0, err
 	}
 
-	// 3. ДОЗАГРУЖАЕМ ЭКСПЕРТОВ ДЛЯ ЭТИХ СТРОК
 	if len(exps) > 0 {
 		if err := fillExpertsForExps(ctx, exps); err != nil {
 			return nil, 0, err
@@ -198,7 +195,6 @@ func IndexGetEmployeeRepo(creator_id int, offset int, limit int, sortField strin
 	return exps, totalCount, nil
 }
 
-// Функция fillExpertsForExps остается БЕЗ ИЗМЕНЕНИЙ (она вытаскивает только ФИО экспертов)
 func fillExpertsForExps(ctx context.Context, exps []models.ExpListItem) error {
 	journalIDs := make([]int, len(exps))
 	for i, exp := range exps {

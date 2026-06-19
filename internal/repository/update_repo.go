@@ -19,11 +19,12 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 
 	defer tx.Rollback()
 
+	// Исправлено: vid_exp изменен на vid_exp_id
 	queryJournal := `
 		UPDATE electronic_journal 
 		SET 
 			creator_id = $1, data_post = $2, fab = $3, "№adm_material" = $4, "№stati" = $5, 
-			vid_exp = $6, organ = $7, name_organ = $8, name_naznch = $9, second_name_naznch = $10, 
+			vid_exp_id = $6, organ = $7, name_organ = $8, name_naznch = $9, second_name_naznch = $10, 
 			patronymic_naznch = $11, question_count = $12, object_count = $13, srok_exp = $14, 
 			stop_date = $15, stop_reason = $16, resuming_date = $17, srok_resuming = $18, 
 			end_date = $19, day_count = $20, exp_day_count = $21, cat_vivod = $22, 
@@ -41,7 +42,7 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		exp.Fab,                // $3
 		exp.Adm_Material,       // $4
 		exp.Nom_Statyi,         // $5
-		exp.Vid_Exp,            // $6
+		exp.Vid_Exp,            // $6 (мапится на vid_exp_id)
 		exp.Organ,              // $7
 		exp.Name_Organ,         // $8
 		exp.Name_Naznch,        // $9
@@ -112,13 +113,11 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		err = tx.QueryRowContext(ctx, queryCheckExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
 
 		if err == sql.ErrNoRows {
-
 			err = tx.QueryRowContext(ctx, queryCreateExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
 			if err != nil {
 				return fmt.Errorf("failed to create new expert %s: %w", expert.Name, err)
 			}
 		} else if err != nil {
-
 			return fmt.Errorf("failed to check expert: %w", err)
 		}
 

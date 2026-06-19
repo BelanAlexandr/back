@@ -18,19 +18,20 @@ func AddExpRepo(exp models.Exp) error {
 
 	defer tx.Rollback()
 
+	// Исправлено: добавлены кавычки для спецсимволов и vid_exp изменен на vid_exp_id
 	queryJournal := `
-        INSERT INTO electronic_journal (
-            creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
-            name_naznch, second_name_naznch, patronymic_naznch, 
-            question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
-            srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
-            impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
-            full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
-            diff_cat_id, exp_res_id
-        ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38
-        ) RETURNING id;`
+		INSERT INTO electronic_journal (
+			creator_id, data_post, fab, "№adm_material", "№stati", vid_exp_id, organ, name_organ,
+			name_naznch, second_name_naznch, patronymic_naznch, 
+			question_count, object_count, srok_exp, stop_date, stop_reason, resuming_date,
+			srok_resuming, end_date, day_count, exp_day_count, cat_vivod, possible_vivod,
+			impossible_vivod, hour_count, expert_cost, material_cost, exploitation_cost, full_cost,
+			full_cost_nds, descrip, is_closed, stat_id, category_id, region_id, iz_nix_id,
+			diff_cat_id, exp_res_id
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+			$21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38
+		) RETURNING id;`
 
 	var journalID int
 	err = tx.QueryRowContext(
