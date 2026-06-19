@@ -10,6 +10,8 @@ import (
 var (
 	emailRegex  = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	digitsRegex = regexp.MustCompile(`\D`)
+
+	nameRegex = regexp.MustCompile(`^[a-zA-Zа-яА-ЯёЁәӘғҒқҚңҢөӨұҰүҮһҺіІ\s-]+$`)
 )
 
 func NewValidator() *validator.Validate {
@@ -22,7 +24,7 @@ func NewValidator() *validator.Validate {
 
 	v.RegisterValidation("custom_phone", func(fl validator.FieldLevel) bool {
 		phone := fl.Field().String()
-		// Очищаем от маски
+
 		cleanPhone := digitsRegex.ReplaceAllString(phone, "")
 
 		if strings.HasPrefix(cleanPhone, "8") && len(cleanPhone) == 11 {
@@ -30,6 +32,12 @@ func NewValidator() *validator.Validate {
 		}
 
 		return len(cleanPhone) >= 10 && len(cleanPhone) <= 15
+	})
+
+	v.RegisterValidation("custom_name", func(fl validator.FieldLevel) bool {
+		name := strings.TrimSpace(fl.Field().String())
+
+		return nameRegex.MatchString(name)
 	})
 
 	return v

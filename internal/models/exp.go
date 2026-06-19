@@ -2,15 +2,11 @@ package models
 
 type Expert struct {
 	Id          int    `json:"id"`
-	Name        string `json:"name" validate:"required"`
-	Second_Name string `json:"second_name" validate:"required"`
-	Patronymic  string `json:"patronymic,omitempty"` // Исправили опечатку с двумя запятыми
+	Name        string `json:"name" validate:"required,custom_name"`
+	Second_Name string `json:"second_name" validate:"required,custom_name"`
+	Patronymic  string `json:"patronymic,omitempty" validate:"omitempty,custom_name"`
 }
 
-// -------------------------------------------------------------------------
-// Облегченная структура СТРОКИ ТАБЛИЦЫ для MUI DataGrid.
-// Теперь фронтенд будет получать ТОЛЬКО эти 5 параметров. Никакого мусора!
-// -------------------------------------------------------------------------
 type ExpListItem struct {
 	Id        int      `json:"id"`
 	Data_Post string   `json:"data_post"`
@@ -19,21 +15,22 @@ type ExpListItem struct {
 	Experts   []Expert `json:"experts"`
 }
 
-// Полная структура (остается для создания, редактирования и валидации)
 type Exp struct {
-	Id                 int      `json:"id"`
-	Creator_id         int      `json:"creator_id" validate:"required"`
-	Data_Post          string   `json:"data_post" validate:"required"`
-	Fab                string   `json:"fab" validate:"required"`
-	Adm_Material       int      `json:"adm_material" validate:"required"`
-	Nom_Statyi         string   `json:"nom_statyi" validate:"required"`
-	Vid_Exp            int      `json:"vid_exp" validate:"required"`
-	Organ              string   `json:"organ" validate:"required"`
-	Name_Organ         string   `json:"name_organ" validate:"required"`
-	Name_Naznch        string   `json:"name_naznch" validate:"required"`
-	Second_Name_Naznch string   `json:"second_name_naznch" validate:"required"`
-	Patronymic_Naznch  *string  `json:"patronymic_naznch"`
-	Experts            []Expert `json:"experts" validate:"required,dive"`
+	Id           int    `json:"id"`
+	Creator_id   int    `json:"creator_id" validate:"required"`
+	Data_Post    string `json:"data_post" validate:"required"`
+	Fab          string `json:"fab" validate:"required"`
+	Adm_Material int    `json:"adm_material" validate:"required"`
+	Nom_Statyi   string `json:"nom_statyi" validate:"required"`
+	Vid_Exp      int    `json:"vid_exp" validate:"required"`
+	Organ        string `json:"organ" validate:"required"`
+	Name_Organ   string `json:"name_organ" validate:"required"`
+
+	Name_Naznch        string  `json:"name_naznch" validate:"required,custom_name"`
+	Second_Name_Naznch string  `json:"second_name_naznch" validate:"required,custom_name"`
+	Patronymic_Naznch  *string `json:"patronymic_naznch" validate:"omitempty,custom_name"`
+
+	Experts []Expert `json:"experts" validate:"required,dive"`
 
 	Question_Count int `json:"question_count" validate:"required"`
 	Object_Count   int `json:"object_count" validate:"required"`
