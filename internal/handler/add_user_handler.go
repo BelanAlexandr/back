@@ -30,6 +30,15 @@ func AddUserHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})
 		return
 	}
+	if req.Email != "" {
+		req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	}
+	if req.Phone_Number != "" {
+		req.Phone_Number = digitsRegex.ReplaceAllString(req.Phone_Number, "")
+		if strings.HasPrefix(req.Phone_Number, "8") && len(req.Phone_Number) == 11 {
+			req.Phone_Number = "7" + req.Phone_Number[1:]
+		}
+	}
 	userIdValue, existsID := c.Get("userID")
 	userId, ok1 := userIdValue.(int)
 	if !existsID || !ok1 {

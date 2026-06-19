@@ -7,7 +7,7 @@ type User struct {
 	Middle_Name  string `json:"middleName"`
 	Login        string `json:"login" validate:"required"`
 	Password     string `json:"password"`
-	Email        string `json:"email"`
-	Phone_Number string `json:"phone"`
+	Email        string `json:"email" validate:"omitempty,custom_email"`
+	Phone_Number string `json:"phone" validate:"omitempty,custom_phone"`
 	Role         int    `json:"role" validate:"required"`
 }

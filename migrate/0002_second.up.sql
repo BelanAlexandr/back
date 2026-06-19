@@ -43,4 +43,3 @@ CREATE TABLE electronic_journal (
     is_closed BOOLEAN DEFAULT FALSE
 );
 
-CREATE INDEX idx_filenames_is_closed ON electronic_journal(is_closed);
