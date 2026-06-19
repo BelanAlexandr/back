@@ -8,19 +8,17 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-// Передаем ctx аргументом, чтобы контролировать таймауты и отмену запросов со стороны клиента
 func UpdateExpRepo(exp models.Exp, closed bool) error {
 	exp.Is_Closed = closed
 	ctx := context.Background()
-	// 1. Начинаем транзакцию
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	// Гарантированный откат в случае panic или раннего return err
+
 	defer tx.Rollback()
 
-	// 2. Обновляем основную запись экспертизы
 	queryJournal := `
 		UPDATE electronic_journal 
 		SET 
@@ -90,14 +88,12 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		return fmt.Errorf("экспертиза с id %d не найдена для обновления", exp.Id)
 	}
 
-	// 3. Удаляем СТАРЫЕ связи этой экспертизы с экспертами (подготовка к перезаписи)
 	queryDeleteLinks := `DELETE FROM electronic_journal_experts WHERE journal_id = $1;`
 	_, err = tx.ExecContext(ctx, queryDeleteLinks, exp.Id)
 	if err != nil {
 		return fmt.Errorf("failed to delete old links: %w", err)
 	}
 
-	// Подготовка SQL-запросов для цикла экспертов
 	queryCheckExpert := `
 		SELECT id FROM dict_expert 
 		WHERE name = $1 AND second_name = $2 AND patronymic = $3;`
@@ -110,32 +106,28 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		INSERT INTO electronic_journal_experts (journal_id, expert_id) 
 		VALUES ($1, $2);`
 
-	// 4. ОБРАБОТКА МАССИВА ЭКСПЕРТОВ (Поиск / Создание -> Привязка)
 	for _, expert := range exp.Experts {
 		var expertID int
 
-		// Проверяем по ФИО, есть ли уже такой эксперт в справочнике
 		err = tx.QueryRowContext(ctx, queryCheckExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
 
 		if err == sql.ErrNoRows {
-			// Эксперт не найден — создаем новую запись в справочнике
+
 			err = tx.QueryRowContext(ctx, queryCreateExpert, expert.Name, expert.Second_Name, expert.Patronymic).Scan(&expertID)
 			if err != nil {
 				return fmt.Errorf("failed to create new expert %s: %w", expert.Name, err)
 			}
 		} else if err != nil {
-			// Любая другая ошибка при чтении из базы данных
+
 			return fmt.Errorf("failed to check expert: %w", err)
 		}
 
-		// Теперь точно связываем экспертизу с валидным ID эксперта (новым или старым)
 		_, err = tx.ExecContext(ctx, queryLinks, exp.Id, expertID)
 		if err != nil {
 			return fmt.Errorf("failed to link expert %d to journal %d: %w", expertID, exp.Id, err)
 		}
 	}
 
-	// 5. ВЫЗОВ УВЕДОМЛЕНИЯ ВНУТРИ ТРАНЗАКЦИИ
 	var message string
 	if exp.Is_Closed {
 		message = fmt.Sprintf("Экспертиза №%d успешно закрыта", exp.Id)
@@ -148,6 +140,5 @@ func UpdateExpRepo(exp models.Exp, closed bool) error {
 		return fmt.Errorf("failed to create notification: %w", err)
 	}
 
-	// 6. Коммитим транзакцию, если все этапы прошли успешно
 	return tx.Commit()
 }

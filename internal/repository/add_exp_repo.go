@@ -15,10 +15,9 @@ func AddExpRepo(exp models.Exp) error {
 	if err != nil {
 		return err
 	}
-	// В случае ошибки или паники все изменения (включая уведомление) откатятся
+
 	defer tx.Rollback()
 
-	// 1. ВСТАВКА ЗАПИСИ В ЖУРНАЛ ЭКСПЕРТИЗ
 	queryJournal := `
         INSERT INTO electronic_journal (
             creator_id, data_post, fab, №adm_material, №stati, vid_exp, organ, name_organ,
@@ -53,7 +52,6 @@ func AddExpRepo(exp models.Exp) error {
 	queryCreateExpert := `INSERT INTO dict_expert (name, second_name, patronymic) VALUES ($1, $2, $3) RETURNING id;`
 	queryLinks := `INSERT INTO electronic_journal_experts (journal_id, expert_id) VALUES ($1, $2);`
 
-	// 2. ОБРАБОТКА МАССИВА ЭКСПЕРТОВ
 	for _, expert := range exp.Experts {
 		var expertID int
 
@@ -73,14 +71,11 @@ func AddExpRepo(exp models.Exp) error {
 		}
 	}
 
-	// 3. ВЫЗОВ УВЕДОМЛЕНИЯ ВНУТРИ ТРАНЗАКЦИИ
-	// Передаем созданный ctx и активный tx. Если здесь упадет — вся транзакция откатится.
 	message := fmt.Sprintf("Создана новая экспертиза №%d в журнале", journalID)
 	_, err = AddNotification(ctx, tx, exp.Creator_id, message)
 	if err != nil {
 		return err
 	}
 
-	// Закрепляем все изменения в базе данных
 	return tx.Commit()
 }

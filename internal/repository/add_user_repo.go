@@ -7,20 +7,18 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-// Добавили creatorID в параметры, чтобы уведомление шло создателю
 func AddUserRepo(creatorID int, user models.User) error {
 	ctx := context.Background()
 
-	// Открываем транзакцию
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("Ошибка начала транзакции: %w", err)
 	}
-	// Если что-то пойдет не так, транзакция откатится автоматически
+
 	defer tx.Rollback()
 
 	var exists bool
-	// Используем QueryRowContext внутри транзакции
+
 	err = tx.QueryRowContext(
 		ctx,
 		"SELECT EXISTS(SELECT 1 FROM users WHERE login=$1)",
@@ -45,11 +43,11 @@ func AddUserRepo(creatorID int, user models.User) error {
 		user.Login,
 		user.Password,
 		user.Role,
-		user.Name,         // сопоставляется с first_name
-		user.Second_Name,  // сопоставляется с last_name
-		user.Middle_Name,  // сопоставляется с middle_name
-		user.Email,        // сопоставляется с email
-		user.Phone_Number, // сопоставляется с phone
+		user.Name,
+		user.Second_Name,
+		user.Middle_Name,
+		user.Email,
+		user.Phone_Number,
 	)
 
 	if err != nil {
@@ -57,13 +55,11 @@ func AddUserRepo(creatorID int, user models.User) error {
 		return fmt.Errorf("Ошибка добавления в бд: %w", err)
 	}
 
-	// Отправляем уведомление администратору (creatorID) о создании нового сотрудника
 	message := fmt.Sprintf("Успешно добавлен новый пользователь с логином: %s", user.Login)
 	_, err = AddNotification(ctx, tx, creatorID, message)
 	if err != nil {
 		return fmt.Errorf("Ошибка отправки уведомления: %w", err)
 	}
 
-	// Фиксируем транзакцию
 	return tx.Commit()
 }

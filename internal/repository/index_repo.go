@@ -11,12 +11,10 @@ import (
 func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, statusFilter string, dateFrom string, dateTo string) ([]models.ExpListItem, int, error) {
 	ctx := context.Background()
 
-	// 1. СЧИТАЕМ ОБЩЕЕ КОЛИЧЕСТВО ЗАПИСЕЙ (COUNT)
 	countQuery := `SELECT COUNT(*) FROM electronic_journal WHERE 1=1`
 	var countArgs []interface{}
 	countPlaceholderIdx := 1
 
-	// Формируем условия фильтрации
 	filterSQL := ""
 	if statusFilter == "open" {
 		filterSQL += fmt.Sprintf(" AND is_closed = $%d", countPlaceholderIdx)
@@ -52,8 +50,6 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 		return make([]models.ExpListItem, 0), 0, nil
 	}
 
-	// 2. ВЫБОРКА ТОЛЬКО ТЕХ ПОЛЕЙ, КОТОРЫЕ ОТОБРАЖАЮТСЯ В ТАБЛИЦЕ
-	// Оставляем строго: id, data_post, is_closed, fab
 	selectQuery := `
         SELECT 
             id, data_post, is_closed, fab
@@ -79,7 +75,7 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 	var exps []models.ExpListItem
 	for rows.Next() {
 		var exp models.ExpListItem
-		// Сканируем только выбранные 4 поля. Остальные поля структуры models.Exp останутся дефолтными (нули/пустые строки)
+
 		err := rows.Scan(
 			&exp.Id,
 			&exp.Data_Post,
@@ -97,8 +93,6 @@ func IndexGetRepo(offset int, limit int, sortField string, sortOrder string, sta
 		return nil, 0, err
 	}
 
-	// 3. ДОЗАГРУЖАЕМ ЭКСПЕРТОВ ДЛЯ ЭТИХ СТРОК
-	// Функция fillExpertsForExps отработает отлично, так как ей нужен только exp.Id
 	if len(exps) > 0 {
 		if err := fillExpertsForExps(ctx, exps); err != nil {
 			return nil, 0, err

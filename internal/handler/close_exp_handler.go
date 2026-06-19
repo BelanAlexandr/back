@@ -16,12 +16,12 @@ func CloseExpHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
 		return
 	}
-	// userIdValue, existsId := c.Get("userID")
-	// userId, ok1 := userIdValue.(int)
-	// if !existsId || !ok1 {
-	// 	c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
-	// 	return
-	// }
+	userIdValue, existsId := c.Get("userID")
+	userId, ok1 := userIdValue.(int)
+	if !existsId || !ok1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Данные авторизации не найдены"})
+		return
+	}
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -34,6 +34,7 @@ func CloseExpHandler(c *gin.Context) {
 		return
 	}
 	req.Id = id
+	req.Creator_id = userId
 	validate := validator.New()
 	if err := validate.Struct(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ошибка валидации полей", "details": err.Error()})

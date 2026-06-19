@@ -11,7 +11,6 @@ import (
 func GetJournalRow(id int) (exp models.Exp, err error) {
 	ctx := context.Background()
 
-	// Исправленные имена столбцов: "№adm_material" и "№stati" обернуты в кавычки с алиасами
 	queryJournal := `
         SELECT 
             id, creator_id, data_post, fab, 
@@ -27,14 +26,13 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
         FROM electronic_journal
         WHERE id = $1;`
 
-	// Переменные для Scan остаются прежними, данные запишутся корректно благодаря AS
 	err = db.QueryRowContext(ctx, queryJournal, id).Scan(
 		&exp.Id,
 		&exp.Creator_id,
 		&exp.Data_Post,
 		&exp.Fab,
-		&exp.Adm_Material, // сюда запишется "№adm_material"
-		&exp.Nom_Statyi,   // сюда запишется "№stati"
+		&exp.Adm_Material,
+		&exp.Nom_Statyi,
 		&exp.Vid_Exp,
 		&exp.Organ,
 		&exp.Name_Organ,
@@ -77,7 +75,6 @@ func GetJournalRow(id int) (exp models.Exp, err error) {
 		return exp, err
 	}
 
-	// 2. Вторая часть запроса (эксперты) остается без изменений
 	queryExperts := `
         SELECT e.id, e.name, e.second_name, e.patronymic
         FROM dict_expert e

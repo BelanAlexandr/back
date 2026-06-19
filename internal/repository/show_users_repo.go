@@ -9,13 +9,10 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-// db — ваш глобальный или локальный пул соединений *sql.DB
-
 func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, roleFilter string) ([]models.User, int, error) {
 	var users []models.User
 	var totalCount int
 
-	// Базовые запросы
 	selectQuery := "SELECT id, login, role, first_name, last_name,middle_name, email, phone FROM users"
 	countQuery := "SELECT COUNT(*) FROM users"
 
@@ -23,9 +20,8 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 	var args []interface{}
 	argCounter := 1
 
-	// 1. Фильтр по поисковой строке (ищем совпадения в login, email, first_name, last_name)
 	if searchQuery != "" {
-		// Приводим к нижнему регистру для регистронезависимого поиска
+
 		searchParam := "%" + strings.ToLower(searchQuery) + "%"
 		conditions = append(conditions, fmt.Sprintf(
 			"(LOWER(login) LIKE $%d OR LOWER(email) LIKE $%d OR LOWER(first_name) LIKE $%d OR LOWER(last_name) LIKE $%d)",
@@ -35,7 +31,6 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 		argCounter++
 	}
 
-	// 2. Фильтр по роли
 	if roleFilter != "" {
 		roleID, err := strconv.Atoi(roleFilter)
 		if err == nil {
@@ -45,26 +40,21 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 		}
 	}
 
-	// Объединяем условия WHERE, если они есть
 	whereClause := ""
 	if len(conditions) > 0 {
 		whereClause = " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	// --- СНАЧАЛА СЧИТАЕМ TOTAL COUNT ---
 	fullCountQuery := countQuery + whereClause
 	err := db.QueryRow(fullCountQuery, args...).Scan(&totalCount)
 	if err != nil {
 		return nil, 0, fmt.Errorf("ошибка подсчета количества пользователей: %w", err)
 	}
 
-	// Если записей вообще нет, можно не делать второй запрос
 	if totalCount == 0 {
 		return []models.User{}, 0, nil
 	}
 
-	// --- ТЕПЕРЬ ПОЛУЧАЕМ СТРОКИ С СОРТИРОВКОЙ И ПАГИНАЦИЕЙ ---
-	// Безопасно подставляем sortField и sortOrder, так как они проверены в хендлере (white-list)
 	fullSelectQuery := fmt.Sprintf("%s%s ORDER BY %s %s LIMIT $%d OFFSET $%d",
 		selectQuery, whereClause, sortField, sortOrder, argCounter, argCounter+1,
 	)
@@ -78,7 +68,7 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 
 	for rows.Next() {
 		var u models.User
-		// Используем sql.NullString на случай, если в БД новые поля пока еще NULL
+
 		var firstName, lastName, middlename, email, phone sql.NullString
 
 		err := rows.Scan(&u.Id, &u.Login, &u.Role, &firstName, &lastName, &middlename, &email, &phone)
@@ -86,7 +76,6 @@ func ShowUsersRepo(offset, limit int, sortField, sortOrder string, searchQuery, 
 			return nil, 0, fmt.Errorf("ошибка сканирования пользователя: %w", err)
 		}
 
-		// Переносим значения из NullString в обычные строки нашей структуры
 		u.Name = firstName.String
 		u.Second_Name = lastName.String
 		u.Middle_Name = middlename.String

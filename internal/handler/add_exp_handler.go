@@ -44,5 +44,6 @@ func AddExpHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось сохранить данные: " + err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, err)
 }

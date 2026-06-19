@@ -8,24 +8,20 @@ import (
 	"github.com/BelanAlexandr/back/internal/models"
 )
 
-// Предполагается, что db *sql.DB доступен в пакете repository
-
-// Добавили creatorID, чтобы отправлять уведомление администратору
 func EditUserRepo(creatorID int, user models.User) error {
 	ctx := context.Background()
 
-	// 1. Открываем транзакцию
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("ошибка начала транзакции: %w", err)
 	}
-	// Автоматический откат при ошибке или панике
+
 	defer tx.Rollback()
 
 	var result sql.Result
 
 	if user.Password == "" {
-		// Обновление БЕЗ изменения пароля
+
 		query := `
 			UPDATE users 
 			SET login = $1, 
@@ -50,7 +46,7 @@ func EditUserRepo(creatorID int, user models.User) error {
 			user.Id,
 		)
 	} else {
-		// Полное обновление ВМЕСТЕ с паролем
+
 		query := `
 			UPDATE users 
 			SET login = $1, 
@@ -83,7 +79,6 @@ func EditUserRepo(creatorID int, user models.User) error {
 		return fmt.Errorf("не удалось обновить данные пользователя: %w", err)
 	}
 
-	// Проверяем, обновился ли хоть один пользователь
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -92,13 +87,11 @@ func EditUserRepo(creatorID int, user models.User) error {
 		return fmt.Errorf("пользователь с id %d не найден для обновления", user.Id)
 	}
 
-	// 2. ВЫЗОВ УВЕДОМЛЕНИЯ ВНУТРИ ТРАНЗАКЦИИ
 	message := fmt.Sprintf("Обновлены данные пользователя с логином: %s (ID: %d)", user.Login, user.Id)
 	_, err = AddNotification(ctx, tx, creatorID, message)
 	if err != nil {
 		return fmt.Errorf("ошибка отправки уведомления: %w", err)
 	}
 
-	// 3. Коммитим транзакцию
 	return tx.Commit()
 }
