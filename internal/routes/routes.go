@@ -41,6 +41,7 @@ func Routes() *gin.Engine {
 	auth.POST("/api/logout", handler.LogoutHandler)
 	//Добавление экспертизы
 	auth.GET("/api/regions", handler.GetRegionsHandler)
+	auth.GET("/api/vids", handler.GetVidHandler)
 	auth.POST("/api/expertiza/save", handler.AddExpHandler)
 	//Закрытие экспертизы
 	auth.PUT("/api/expertize/:id/complete", handler.CloseExpHandler)

@@ -18,14 +18,7 @@ func GetRegionsHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	vid, err := service.GetVidService()
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"regions": regions,
-		"vids":    vid,
-	})
+	c.JSON(http.StatusOK, regions)
+
 }
